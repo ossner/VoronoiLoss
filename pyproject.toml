@@ -8,3 +8,7 @@ dependencies = [
     "napari[all]>=0.6.6",
     "numpy>=2.3.5",
 ]
+[tool.uv]
+required-environments = [
+    "sys_platform == 'darwin' and platform_machine == 'x86_64'"
+]

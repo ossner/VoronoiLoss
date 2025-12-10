@@ -2,8 +2,13 @@ version = 1
 revision = 3
 requires-python = ">=3.12"
 resolution-markers = [
-    "python_full_version >= '3.13'",
-    "python_full_version < '3.13'",
+    "(python_full_version >= '3.13' and platform_machine != 'x86_64') or (python_full_version >= '3.13' and sys_platform != 'darwin')",
+    "python_full_version >= '3.13' and platform_machine == 'x86_64' and sys_platform == 'darwin'",
+    "(python_full_version < '3.13' and platform_machine != 'x86_64') or (python_full_version < '3.13' and sys_platform != 'darwin')",
+    "python_full_version < '3.13' and platform_machine == 'x86_64' and sys_platform == 'darwin'",
+]
+required-markers = [
+    "platform_machine == 'x86_64' and sys_platform == 'darwin'",
 ]
 
 [[package]]
@@ -248,7 +253,7 @@ name = "build"
 version = "1.3.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "colorama", marker = "os_name == 'nt'" },
+    { name = "colorama", marker = "(os_name == 'nt' and platform_machine != 'x86_64') or (os_name == 'nt' and sys_platform != 'darwin')" },
     { name = "packaging" },
     { name = "pyproject-hooks" },
 ]
@@ -1252,7 +1257,8 @@ all = [
     { name = "numba" },
     { name = "pyqt5" },
     { name = "pyqt5-qt5", marker = "sys_platform == 'Windows'" },
-    { name = "triangle" },
+    { name = "triangle", version = "20230923", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
+    { name = "triangle", version = "20250106", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'" },
     { name = "zarr" },
 ]
 
@@ -2635,10 +2641,29 @@ wheels = [
 
 [[package]]
 name = "triangle"
+version = "20230923"
+source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "python_full_version >= '3.13' and platform_machine == 'x86_64' and sys_platform == 'darwin'",
+    "python_full_version < '3.13' and platform_machine == 'x86_64' and sys_platform == 'darwin'",
+]
+dependencies = [
+    { name = "numpy", marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/35/00/ac56b3d4282a600ca8d990413066cf796165a06e137683e2ae02b6a27812/triangle-20230923-cp312-cp312-macosx_10_9_x86_64.whl", hash = "sha256:19dca27055bd9097d2704fce6874ddadd786453e7fb58fa52a7fad9b2c0ccf78", size = 1458813, upload-time = "2023-09-24T10:19:29.714Z" },
+]
+
+[[package]]
+name = "triangle"
 version = "20250106"
 source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "(python_full_version >= '3.13' and platform_machine != 'x86_64') or (python_full_version >= '3.13' and sys_platform != 'darwin')",
+    "(python_full_version < '3.13' and platform_machine != 'x86_64') or (python_full_version < '3.13' and sys_platform != 'darwin')",
+]
 dependencies = [
-    { name = "numpy" },
+    { name = "numpy", marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/6f/ba/22c552b21aa5a7724e712372d29c9397db19086e99c62f876c1b73025df2/triangle-20250106-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:64106544f6d137b619f7f724abbb7c2c78353691cccfc163e9d0b2e2476e0853", size = 1439851, upload-time = "2025-01-07T04:54:03.857Z" },
