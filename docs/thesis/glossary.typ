@@ -1,17 +1,43 @@
+// this is an example. Check https://typst.app/universe/package/glossarium
+
 #let glossary = (
   (
     key: "tum",
-    short: "TU Munich",
-    long: "Technische Universität München",
-    description: "A university in Munich, Germany.",
+    short: "TUM",
+    long: "Technical University Munich",
   ),
   (
-    key: "oidc",
-    short: "OIDC",
-    long: "OpenID Connect",
-    description: [
-      OpenID is an open standard and decentralized authentication protocol promoted by the non-profit
-      #link("https://en.wikipedia.org/wiki/OpenID#OpenID_Foundation")[OpenID Foundation].
-    ],
+    key: "lmu",
+    short: "LMU",
+    long: "Ludwig-Maximilians-Universität München",
+  ),
+  (
+    key: "ieee",
+    short: "IEEE",
+    long: "Institute of Electrical and Electronics Engineers",
+  ),
+  // Add a PLURAL form
+  (
+    key: "potato",
+    short: "potato",
+    // "plural" will be used when "short" should be pluralized
+    plural: "potatoes",
+  ),
+  // Add a LONGPLURAL form
+  (
+    key: "dm",
+    short: "DM",
+    long: "diagonal matrix",
+    // "longplural" will be used when "long" should be pluralized
+    longplural: "diagonal matrices",
+    description: "Probably some math stuff idk",
+  ),
+  // Add a CUSTOM entry
+  (
+    key: "c",
+    short: $c$,
+    description: "Speed of light in vacuum",
+    // The custom key will be ignored by the default print-glossary function
+    custom: (unit: $op("m s")^(-1)$),
   ),
 )

@@ -1,10 +1,8 @@
-#import "@local/tum-thesis-typst:0.1.0": tum-thesis
+#import "@preview/exzellenz-tum-thesis:0.2.0": exzellenz-tum-thesis
 
 #import "utils.typ": inwriting, draft, todo
 #import "glossary.typ": glossary
 #import "@preview/glossarium:0.5.9": make-glossary, register-glossary, print-glossary, gls, glspl
-#show: make-glossary
-#register-glossary(glossary)
 
 /** Introduction
 
@@ -30,45 +28,33 @@
 #set text(ligatures: false)
 #set text(font: "New Computer Modern Sans")
 
-
-#show: tum-thesis.with(
+#show: exzellenz-tum-thesis.with(
   degree: "Master",
   program: "Informatics",
-  school: "School of Computation, Information and Technology \n Informatics",
-  supervisor: "Prof. Dr. Daniel Rückert",
-  advisors: ("Hendrik Möller",),
+  school: "School of Computation, Information and Technology",
+  examiner: "Prof. Dr. Daniel Rückert",
+  supervisors: ("Hendrik Möller",),
   author: "Sebastian Oßner",
-  startDate: "15.01.1799",
-  titleEn: "Addressing Volumetric Bias in Multi-Instance Semantic Segmentation Using Voronoi Tesselation",
-  titleDe: "Adressierung volumetrischer Befangenheit in Multi-Instanz-Semantischer Segmentierung durch Voronoi-Tessellation",
-  abstractEn: [
+  title-en: "Addressing Volumetric Bias in Multi-Instance Semantic Segmentation Using Voronoi Tesselation",
+  title-de: "Adressierung volumetrischer Befangenheit in Multi-Instanz-Semantischer Segmentierung durch Voronoi-Tessellation",
+  abstract-text: [
     #lorem(60)
   ],
-  submissionDate: datetime.today().display("[day].[month].[year]"),
-  showTitleInHeader: true,
+  submission-date: datetime.today().display("[day].[month].[year]"),
+  show-title-in-header: true,
   draft: draft,
 )
 
 // Settings for Body //
-
-
-// Set numbering mode
-#set page(numbering: "1")
-#set math.equation(numbering: "(1)")
-#set heading(numbering: "1.1")
-
-
 // Set fonts
 #set text(font: "New Computer Modern")
 #show raw: set text(font: "New Computer Modern Mono")
 #show math.equation: set text(font: "New Computer Modern Math")
 
-
 // Set font size
 #show heading.where(level: 3): set text(size: 1.05em)
 #show heading.where(level: 4): set text(size: 1.0em)
 #show figure: set text(size: 0.9em)
-
 
 // Set spacing
 #set par(leading: 0.9em, first-line-indent: 1.8em, justify: true, spacing: 1em)
@@ -81,7 +67,6 @@
 #show heading.where(level: 3): set block(above: 1.75em, below: 1em)
 #show heading.where(level: 4): set block(above: 1.55em, below: 1em)
 
-
 // Pagebreak after level 1 headings
 #show heading.where(level: 1): it => [
   #pagebreak(weak: true)
@@ -90,23 +75,20 @@
 
 // Names for headings
 #set heading(supplement: it => {
-  if (it.has("level")) {
-    if it.level == 1 [Part]
-    else if it.level == 2 [Chapter]
-    else [Section]
+  if (it.has("depth")) {
+    if it.depth == 1 [Chapter]
+    else if it.depth == 2 [Section]
+    else [Subsection]
   } else {
     [ERROR, this should not happen]
   }
 })
 
-
 // Set citation style
-#set cite(style: "alphanumeric")
-
+#set cite(style: "ieee")
 
 // Table stroke
 #set table(stroke: 0.5pt + black)
-
 
 // show reference targets in brackets
 #show ref: it => {
@@ -121,7 +103,6 @@
 #show ref: set text(fill: color.olive)
 #show link: set text(fill: blue)
 
-
 // style table-of-contents
 #show outline.entry.where(
   level: 1
@@ -130,17 +111,14 @@
   strong(it)
 }
 
-
-
-
-
 // Draft Settings //
 #show cite: set text(fill: blue) if inwriting
 #show footnote: set text(fill: purple) if inwriting
 #set cite(style: "chicago-author-date") if inwriting
 
-
-
+// Make and register Glossary //
+#show: make-glossary
+#register-glossary(glossary)
 
 // ------ Content ------
 
@@ -155,11 +133,15 @@
 )
 #pagebreak(weak: false)
 
-
+// Set numbering mode (and restart for main content)
+#set page(numbering: "1")
+#counter(page).update(1)
+#set math.equation(numbering: "(1)")
+#set heading(numbering: "1.1")
 // --- Main Chapters ---
 
-
-#include "Chapter_Introduction.typ"
+#include "chapters/1_Introduction.typ"
+#include "chapters/2_Related_Work.typ"
 
 //#include "Chapter_Background.typ"
 
@@ -174,7 +156,7 @@
 //#include "Chapter_FutureResearch.typ"
 
 
-// --- Appendixes ---
+// --- Appendices ---
 
 // restart page numbering using roman numbers
 #set page(numbering: "i")
@@ -184,7 +166,7 @@
 #include("Chapter_Appendix.typ")
 
 // List of Acronyms.
-#heading(numbering: none)[List of Acronyms]
+#heading(numbering: none)[Glossary]
 #print-glossary(glossary)
 
 // List of figures.
@@ -200,7 +182,6 @@
   title: none,
   target: figure.where(kind: table)
 )  
-
 
 // --- Bibliography ---
 
