@@ -25,7 +25,7 @@
 
 // Global Settings //
 #set text(lang: "en", size: 12pt)
-#set text(ligatures: false)
+#set text(ligatures: true)
 #set text(font: "New Computer Modern Sans")
 
 #show: exzellenz-tum-thesis.with(
@@ -163,7 +163,7 @@
 #counter(page).update(1)
 
 
-#include("Chapter_Appendix.typ")
+#include("chapters/7_Appendix.typ")
 
 // List of Acronyms.
 #heading(numbering: none)[Glossary]
@@ -186,4 +186,4 @@
 // --- Bibliography ---
 
 #set par(leading: 0.7em, first-line-indent: 0em, justify: true)
-#bibliography("items.bib", style: "apa")
+#bibliography("items.bib")
