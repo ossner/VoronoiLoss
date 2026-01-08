@@ -47,6 +47,23 @@ platelet_em_index_to_class = {
     6: 'dense granule core'
 }
 
+SEMANTIC_COLORS = np.array([
+    [  0,   0,   0,   0],    # 0: Background (None)
+    [  0,  40, 255, 255],    # 1: Cell (Dark Blue)
+    [  0, 212, 255, 255],    # 2: Mitochondria (Cyan)
+    [124, 255, 121, 255],    # 3: Alpha granule (Green)
+    [255, 229,   0, 255],    # 4: Canalicular vessel (Yellow)
+    [255,  70,   0, 255],    # 5: Dense granule body (Red)
+    [127,   0,   0, 255],    # 6: Dense granule core (Purple)
+], dtype=np.uint8)
+
+# Build lookup: (R, G, B, A) → class index
+COLOR_TO_CLASS = {
+    tuple(color): idx
+    for idx, color in enumerate(SEMANTIC_COLORS)
+}
+
+
 log("Initializing preprocessing pipeline")
 
 # ----------------------------------------------------
@@ -63,16 +80,21 @@ with timed_step("Loading semantic RGB labels"):
 # ----------------------------------------------------
 # RGB → Semantic Index Conversion
 # ----------------------------------------------------
-with timed_step("Converting RGB labels to semantic mask"):
-    data_points = semantic_rgb.reshape(-1, semantic_rgb.shape[-1])
-    unique_colors, indices = np.unique(
-        data_points, axis=0, return_inverse=True
-    )
-    semantic_mask = indices.reshape(
-        semantic_rgb.shape[:-1]
-    ).astype(np.uint8)
+with timed_step("Converting RGB labels to semantic mask (explicit mapping)"):
 
-    log(f"Detected {len(unique_colors)} unique semantic colors")
+    # Flatten pixels
+    flat_pixels = semantic_rgb.reshape(-1, semantic_rgb.shape[-1])
+
+    semantic_mask = np.zeros(flat_pixels.shape[0], dtype=np.uint8)
+
+    for rgba, class_idx in COLOR_TO_CLASS.items():
+        matches = np.all(flat_pixels == rgba, axis=1)
+        semantic_mask[matches] = class_idx
+
+    semantic_mask = semantic_mask.reshape(semantic_rgb.shape[:-1])
+
+    log("Semantic mapping completed using explicit color table")
+
 
 # ----------------------------------------------------
 # 3D Voronoi Computation
@@ -83,7 +105,7 @@ def compute_3d_voronoi(mask):
     """
     Computes 3D Voronoi regions based on instance boundaries.
     """
-    instance_labels = label(mask > 0, connectivity=2)
+    instance_labels = label(mask > 0, connectivity=1)
 
     if instance_labels.max() == 0:
         return np.zeros_like(mask)
