@@ -5,7 +5,6 @@ import glob
 import os
 import shutil
 import tempfile
-import matplotlib.pyplot as plt
 import pytorch_lightning
 from monai.utils import set_determinism
 from monai.transforms import (
