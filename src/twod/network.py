@@ -33,7 +33,8 @@ from monai.transforms import (
     RandBiasFieldd,
 )
 import numpy as np
-from CCDiceCELoss import ComputeVoronoiMapsd, CCDiceCELoss, voronoi_map_from_binary_mask
+from VoronoiTransform import ComputeVoronoiMapsd, voronoi_map_from_binary_mask
+from CCDiceCELoss import CCDiceCELoss
 from monai.data import decollate_batch
 from monai.data import CacheDataset, DataLoader
 from monai.utils import set_determinism
@@ -270,8 +271,8 @@ class PlateletSegmentationModel(pl.LightningModule):
         images, labels = batch["image"], batch["label"]
         outputs = self.forward(images)
         if self.loss == 'CCDiceCE':
-            voronoi_map = batch["label_voronoi"]
-            label_instances = batch["label_instances"]
+            voronoi_map = batch["voronoi"]
+            label_instances = batch["instances"]
             loss = self.loss_function(
                 outputs, labels, voronoi_map, label_instances)
         elif self.loss == "DiceCE":
@@ -293,8 +294,8 @@ class PlateletSegmentationModel(pl.LightningModule):
 
         voronoi, instance_labels = None, None
         if self.loss == 'CCDiceCE':
-            voronoi = batch["label_voronoi"]
-            instance_labels = batch["label_instances"]
+            voronoi = batch["voronoi"]
+            instance_labels = batch["instances"]
             val_loss = self.loss_function(
                 outputs, labels, voronoi, instance_labels)
         elif self.loss == "DiceCE":
