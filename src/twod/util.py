@@ -4,6 +4,7 @@ import numpy as np
 import scipy.ndimage as ndi
 from monai.transforms import MapTransform
 import numpy as np
+from matplotlib.colors import ListedColormap
 
 
 SEMANTIC_COLORS = np.array([
@@ -95,3 +96,9 @@ def instance_f1_score(pred, gt, iou_thresh=0.5):
         return 0.0
 
     return 2 * tp / (2 * tp + fp + fn)
+
+def _get_random_cmap(max_val):
+    """Generates a random colormap for instance visualization."""
+    colors = np.random.rand(int(max_val) + 1, 3)
+    colors[0] = [0, 0, 0]  # Background is black
+    return ListedColormap(colors)

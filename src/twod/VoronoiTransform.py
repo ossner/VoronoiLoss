@@ -45,7 +45,7 @@ class ComputeVoronoiMapsd(MapTransform):
                 mask = mask[0]
 
             voronoi, cc = voronoi_map_from_binary_mask(mask)
-
+            
             d[f"voronoi"] = torch.from_numpy(voronoi).long()
             d[f"instances"] = torch.from_numpy(cc).long()
 
