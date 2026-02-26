@@ -208,4 +208,4 @@ __marimo__/
 .idea/
 data/
 .DS_store
-src/*/logs
+src/*/logs*
