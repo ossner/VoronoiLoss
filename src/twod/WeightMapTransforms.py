@@ -6,10 +6,14 @@ from scipy.ndimage import distance_transform_edt
 
 
 class ComputeWeightMapsd(MapTransform):
-    def __init__(self, keys, allow_missing_keys=False, mountain_sigma_sc=1, island_sigma_sc=5):
+    def __init__(self, keys, concept, allow_missing_keys=False, mountain_sigma_sc=1, island_sigma_sc=5):
         super().__init__(keys, allow_missing_keys)
         self.mountain_sigma = mountain_sigma_sc
         self.island_sigma = island_sigma_sc
+        allowed_maps = ['none', 'iw', 'v_region', 'v_size',
+                        'v_share', 'v_mountains', 'v_islands']
+        assert concept in allowed_maps, f'Provided weight map {concept} not valid. Choose one of {allowed_maps}'
+        self.concept = concept
 
     def __call__(self, data):
         d = dict(data)
@@ -30,10 +34,8 @@ class ComputeWeightMapsd(MapTransform):
             if vor_np.ndim == 3:
                 vor_np = vor_np[0]
 
-            # Instantiate maps as unit tensors
-            maps = {}
-            for concept in ['none', 'iw', 'v_size', 'v_share', 'v_mountains', 'v_islands']:
-                maps[concept] = np.ones_like(inst_np, dtype=np.float32)
+            # Instantiate map as unit tensor
+            map = np.ones_like(inst_np, dtype=np.float32)
 
             # The overall budget that can be distributed (B)
             total_budget = inst_np.size
@@ -42,6 +44,7 @@ class ComputeWeightMapsd(MapTransform):
             region_ids = region_ids[region_ids != 0]
 
             distance_map = distance_transform_edt(inst_np == 0)
+
             for idx in region_ids:
                 inst_mask = (inst_np == idx)
                 vor_mask = (vor_np == idx)
@@ -51,61 +54,51 @@ class ComputeWeightMapsd(MapTransform):
                 area_vor = np.sum(vor_mask)
                 area_bg = np.sum(bg_mask)
 
-                maps['iw'][inst_mask] = total_budget / \
-                    ((len(region_ids)+1)*area_inst)
-                maps['iw'][bg_mask] = total_budget / \
-                    ((len(region_ids)+1)*np.sum(inst_np == 0))
+                region_budget = total_budget/len(region_ids)
+                if self.concept == 'iw':
+                    map[inst_mask] = total_budget / \
+                        ((len(region_ids)+1)*area_inst)
+                    map[bg_mask] = total_budget / \
+                        ((len(region_ids)+1)*np.sum(inst_np == 0))
+                elif self.concept == 'v_region':
+                    map[vor_mask] = region_budget / area_vor
+                elif self.concept == 'v_size':
+                    alpha = 0.5
+                    map[inst_mask] = alpha * \
+                        region_budget / area_inst
+                    map[bg_mask] = (
+                        1-alpha) * region_budget / area_bg
+                elif self.concept == 'v_mountains':
+                    sigma = self.mountain_sigma * np.sqrt(area_inst / np.pi)
+                    # Lower bound to prevent division by zero
+                    sigma = max(sigma, 1.0)
+                    dists = distance_map[bg_mask]
+                    bg_decay = np.exp(-dists / sigma)
+                    bg_integral = np.sum(bg_decay)
 
-                budget_is_size = area_vor
-                budget_is_equalized = total_budget/len(region_ids)
+                    w_l = region_budget / (area_inst + bg_integral)
+                    map[inst_mask] = w_l
+                    map[bg_mask] = w_l * bg_decay
+                elif self.concept == 'v_islands':
+                    sigma = self.island_sigma * np.sqrt(area_inst / np.pi)
+                    # Lower bound to prevent division by zero
+                    sigma = max(sigma, 1.0)
+                    dists = distance_map[bg_mask]
+                    island_growth = 1.0 - np.exp(-dists / sigma)
+                    i_integral = np.sum(island_growth)
 
-                alpha = 0.5
-                maps['v_size'][inst_mask] = alpha * \
-                    budget_is_equalized / area_inst
-                maps['v_size'][bg_mask] = (
-                    1-alpha) * budget_is_equalized / area_bg
+                    w_l = region_budget / (area_inst + i_integral)
 
-                # TODO: There is a midpoint between these approaches where the region_budget is equal, but intra-region split is 0.5
+                    map[inst_mask] = w_l
+                    map[bg_mask] = w_l * island_growth
 
-                alpha = area_vor/total_budget
-                maps['v_share'][inst_mask] = (1-alpha) * \
-                    budget_is_equalized / area_inst
-                maps['v_share'][bg_mask] = alpha * \
-                    budget_is_equalized / area_bg
-
-                # Topographical approaches
-                sigma = self.mountain_sigma * np.sqrt(area_inst / np.pi)
-                # Lower bound to prevent division by zero
-                sigma = max(sigma, 1.0)
-                dists = distance_map[bg_mask]
-                bg_decay = np.exp(-dists / sigma)
-                bg_integral = np.sum(bg_decay)
-
-                w_l = budget_is_equalized / (area_inst + bg_integral)
-                maps['v_mountains'][inst_mask] = w_l
-                maps['v_mountains'][bg_mask] = w_l * bg_decay
-
-                # --- Concept: V_ISLANDS (The Moat/Shore) ---
-                # We use a wider sigma for the 'moat' to give more breathing room
-                sigma = self.island_sigma * np.sqrt(area_inst / np.pi)
-                sigma = max(sigma, 1.0)
-                # Lower bound to prevent division by zero
-                island_growth = 1.0 - np.exp(-dists / sigma)
-                i_integral = np.sum(island_growth)
-
-                # WL = Total Area / (Area_L + Sum of growth)
-                w_l = budget_is_equalized / (area_inst + i_integral)
-
-                maps['v_islands'][inst_mask] = w_l
-                maps['v_islands'][bg_mask] = w_l * island_growth
-
-            for concept, map in maps.items():
-                map_sum = np.sum(map)
-                unit_sum = np.sum(np.ones_like(map))
-                total_delta = np.abs(map_sum - unit_sum)
-                assert total_delta < (1e-5 * unit_sum), f"Sum over weight map {concept} not within range of unit tensor, difference: {total_delta}"
-                map = torch.from_numpy(map[None, ...])
-                if torch.is_tensor(instances):
-                    map = map.to(instances.device)
-                d[concept] = map
+            map_sum = np.sum(map)
+            unit_sum = np.sum(np.ones_like(map))
+            total_delta = np.abs(map_sum - unit_sum)
+            assert total_delta < (
+                1e-5 * unit_sum), f"Sum over weight map {self.concept} not within range of unit tensor, difference: {total_delta}"
+            map = torch.from_numpy(map[None, ...])
+            if torch.is_tensor(instances):
+                map = map.to(instances.device)
+            d['weight_map'] = map
         return d
