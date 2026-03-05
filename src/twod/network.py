@@ -15,6 +15,7 @@ from monai.transforms import (
     ScaleIntensityd,
     RandSpatialCropSamplesd,
     EnsureTyped,
+    SpatialPadd,
     RandRotated,
     Zoomd,
     RandZoomd,
@@ -22,6 +23,7 @@ from monai.transforms import (
     RandGaussianSmoothd,
     HistogramNormalized,
     ThresholdIntensityd,
+    RandSpatialCropd,
     Lambdad,
     ScaleIntensityRangePercentilesd,
     RandAdjustContrastd,
@@ -99,7 +101,6 @@ class PlateletSegmentationModel(pl.LightningModule):
         train_files = get_data_dicts(self.data_dir, "train", self.task)
         val_files = get_data_dicts(self.data_dir, "val", self.task)
         test_files = get_data_dicts(self.data_dir, "test", self.task)
-
         # All keys for monai transforms that need to me spatially augmented together
         SPATIAL_KEYS = [
             "image", "label", "voronoi", "weight_map"
@@ -112,22 +113,21 @@ class PlateletSegmentationModel(pl.LightningModule):
             "bilinear",  # weight_map
         ]
 
-        # --- Stage 1: Map Generation (on the full 800x800 image) ---
-        base_transforms = Compose([
+        train_transforms = Compose([
             LoadImaged(keys=['image', 'label']),
             EnsureChannelFirstd(keys=["image", "label"],
                                 channel_dim="no_channel"),
             Lambdad(keys=["label"], func=lambda x: x / 255.0),
+            # RandSpatialCropd(keys=["image", "label"],
+            #                  roi_size=self.roi_size, random_size=False),
             ComputeVoronoiMapsd(keys=["label"]),
             EnsureChannelFirstd(keys=["voronoi"], channel_dim="no_channel"),
             ComputeWeightMapsd(
                 keys=["label"], concept=self.weight_map, mountain_sigma_sc=2, island_sigma_sc=5),
             ScaleIntensityd(['image']),
             EnsureTyped(keys=SPATIAL_KEYS),
-        ])
-
-        train_transforms = Compose([
-            RandFlipd(keys=SPATIAL_KEYS, prob=0.5, spatial_axis=0),
+            RandFlipd(
+                keys=SPATIAL_KEYS, prob=0.5, spatial_axis=0),
             RandFlipd(keys=SPATIAL_KEYS, prob=0.5, spatial_axis=1),
             RandRotate90d(keys=SPATIAL_KEYS, prob=0.5, max_k=3),
             RandZoomd(
@@ -144,11 +144,28 @@ class PlateletSegmentationModel(pl.LightningModule):
             EnsureTyped(keys=SPATIAL_KEYS),
         ])
 
+        val_transforms = Compose([
+            LoadImaged(keys=['image', 'label']),
+            EnsureChannelFirstd(keys=["image", "label"],
+                                channel_dim="no_channel"),
+            Lambdad(keys=["label"], func=lambda x: x / 255.0),
+            # RandSpatialCropd(keys=["image", "label"],
+            #                  roi_size=self.roi_size, random_size=False),
+            ComputeVoronoiMapsd(keys=["label"]),
+            EnsureChannelFirstd(keys=["voronoi"], channel_dim="no_channel"),
+            ComputeWeightMapsd(
+                keys=["label"], concept=self.weight_map, mountain_sigma_sc=2, island_sigma_sc=5),
+            ScaleIntensityd(['image']),
+            EnsureTyped(keys=SPATIAL_KEYS),
+        ])
+
         test_transforms = Compose([
             LoadImaged(keys=['image', 'label']),
             EnsureChannelFirstd(keys=["image", "label"],
                                 channel_dim="no_channel"),
             Lambdad(keys=["label"], func=lambda x: x / 255.0),
+            #RandSpatialCropd(keys=["image", "label"],
+            #                 roi_size=self.roi_size, random_size=False),
             ScaleIntensityd(['image']),
             EnsureTyped(keys=['image', 'label']),
         ])
@@ -156,10 +173,8 @@ class PlateletSegmentationModel(pl.LightningModule):
         def create_random_patch_dataset(data_files, num_patches_per_image=25, train=False):
             all_patches = []
 
-            # Use a basic Dataset just to run the heavy pre-processing once
-            base_ds = Dataset(data=data_files, transform=base_transforms)
+            base_ds = Dataset(data=data_files, transform=val_transforms)
 
-            # The cropper we will use manually
             cropper = RandSpatialCropSamplesd(
                 keys=SPATIAL_KEYS,
                 roi_size=self.roi_size,
@@ -167,10 +182,9 @@ class PlateletSegmentationModel(pl.LightningModule):
                 random_center=True,
             )
 
-            print("Generating and caching all random patches...")
+            print("Generating and caching random patches...")
             for i in range(len(base_ds)):
                 full_data = base_ds[i]
-                # This returns a LIST of 25 dicts
                 patches = cropper(full_data)
                 all_patches.extend(patches)
 
@@ -374,22 +388,13 @@ class PlateletSegmentationModel(pl.LightningModule):
         self.recall.reset()
         self.precision.reset()
         self.evaluator = Panoptica_Evaluator.load_from_config(
-            "src/twod/panoptica_config.yaml")
+            "src/twod/eval/panoptica_config.yaml")
         self.aggregator = Panoptica_Aggregator(
             panoptica_evaluator=self.evaluator, output_file=f'{self.logger.log_dir}/eval.tsv')
 
     def test_step(self, batch, batch_idx):
         images, labels = batch["image"], batch["label"]
 
-        # sw_batch_size = 4
-        # outputs = sliding_window_inference(
-        #     inputs=images,
-        #     roi_size=self.roi_size,
-        #     sw_batch_size=sw_batch_size,
-        #     predictor=self.forward,
-        #     overlap=0.25,
-        #     mode="gaussian"
-        # )
         outputs = self.forward(images)
         preds = self.post_trans(outputs)
 
@@ -431,7 +436,6 @@ class PlateletSegmentationModel(pl.LightningModule):
     def on_test_epoch_end(self):
         precision = self.precision.compute()
         recall = self.recall.compute()
-        f1 = (2 * precision * recall) / (precision + recall + 1e-8)
 
         statistics_obj = Panoptica_Statistic.from_file(
             f'{self.logger.log_dir}/eval.tsv')
@@ -439,15 +443,15 @@ class PlateletSegmentationModel(pl.LightningModule):
             include_across_group=False)['instance']
         metrics_to_log = {
             "test/global/dice":      summary['global_bin_dsc'].avg,
+            "test/global/precision": precision,
+            "test/global/recall":    recall,
+            "test/instance/dice":      summary['sq_dsc'].avg,
             "test/instance/tp":        summary['tp'].avg,
             "test/instance/fp":        summary['fp'].avg,
             "test/instance/fn":        summary['fn'].avg,
             "test/instance/precision": summary['prec'].avg,
             "test/instance/recall":    summary['rec'].avg,
-            "test/instance/f1":    (2*summary['prec'].avg*summary['rec'].avg)/(summary['prec'].avg+summary['rec'].avg),
-            "test/global/precision": precision,
-            "test/global/recall":    recall,
-            "test/global/f1":    f1,
+            "test/instance/f1":         summary['rq'].avg,
             "test/instance/assd":      summary['sq_assd'].avg,
             "test/instance/cedi":      summary['sq_cedi'].avg,
         }

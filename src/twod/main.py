@@ -7,17 +7,17 @@ from lightning.pytorch.callbacks.early_stopping import EarlyStopping
 import torch
 from monai.utils.enums import TraceKeys
 
-DATASET = 'EPFL_mitochondria'
+# DATASET = 'cem_mitolab_split'
 DATASET = 'platelet-em'
 
-TASK = 'mitochondria'
+# TASK = 'alpha granule'
+# TASK = 'mitochondria'
 TASK = 'canalicular vessel'
-TASK = 'alpha granule'
 
 torch.serialization.add_safe_globals(
     [WeightedDice, WeightedBCE, CCDiceCE, TraceKeys])
 
-for weight_map in ['none', 'v_region', 'v_size', 'v_mountains', 'v_islands', 'iw']:
+for weight_map in ['v_region', 'none', 'v_size', 'v_mountains', 'v_islands', 'iw']:
     best_dice_checkpoint = ModelCheckpoint(
         dirpath=None,
         filename="best_dice",
@@ -44,7 +44,7 @@ for weight_map in ['none', 'v_region', 'v_size', 'v_mountains', 'v_islands', 'iw
     )
     
     run_logger = TensorBoardLogger(
-        save_dir='/home/student/sebastian_ma/VoronoiLoss/src/twod/logs',
+        save_dir='/home/student/sebastian_ma/VoronoiLoss/src/twod/train_logs',
         name=f"{TASK}/{weight_map}",
         default_hp_metric=False
     )
@@ -62,9 +62,5 @@ for weight_map in ['none', 'v_region', 'v_size', 'v_mountains', 'v_islands', 'iw
     )
     
     model = PlateletSegmentationModel(  # ('Dice', Dice(), 1), ('CE', CE(), 1), ('CCDiceCE', CCDiceCE(), 1)
-        f'data/{DATASET}/2d_binary_dataset_slices', loss_dict=[('Dice', WeightedDice(), 1), ('CE', WeightedBCE(), 1), ('CCDiceCE', CCDiceCE(), 1)], weight_map=weight_map, batch_size=8, lr=0.001, seed=0, task=TASK, roi_size=(288, 288))
-
+        f'data/{DATASET}/2d_binary_dataset_slices', loss_dict=[('Dice', WeightedDice(), 1), ('CE', WeightedBCE(), 1)], weight_map=weight_map, batch_size=8, lr=0.001, seed=0, task=TASK, roi_size=(288, 288))
     trainer.fit(model)
-    # TODO: What makes more sense here? F1 or dice?
-    trainer.test(
-        model, ckpt_path=f'/home/student/sebastian_ma/VoronoiLoss/src/twod/logs/{TASK}/{weight_map}/version_0/checkpoints/best_dice.ckpt')
