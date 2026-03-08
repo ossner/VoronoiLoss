@@ -21,18 +21,10 @@ from monai.transforms import (
     RandZoomd,
     RandGaussianNoised,
     RandGaussianSmoothd,
-    HistogramNormalized,
-    ThresholdIntensityd,
     RandSpatialCropd,
     Lambdad,
-    ScaleIntensityRangePercentilesd,
-    RandAdjustContrastd,
-    CenterSpatialCropd,
     RandScaleIntensityd,
     RandShiftIntensityd,
-    Rand2DElasticd,
-    RandGaussianSharpend,
-    RandBiasFieldd,
 )
 import os
 import numpy as np
@@ -114,18 +106,6 @@ class PlateletSegmentationModel(pl.LightningModule):
         ]
 
         train_transforms = Compose([
-            LoadImaged(keys=['image', 'label']),
-            EnsureChannelFirstd(keys=["image", "label"],
-                                channel_dim="no_channel"),
-            Lambdad(keys=["label"], func=lambda x: x / 255.0),
-            # RandSpatialCropd(keys=["image", "label"],
-            #                  roi_size=self.roi_size, random_size=False),
-            ComputeVoronoiMapsd(keys=["label"]),
-            EnsureChannelFirstd(keys=["voronoi"], channel_dim="no_channel"),
-            ComputeWeightMapsd(
-                keys=["label"], concept=self.weight_map, mountain_sigma_sc=2, island_sigma_sc=5),
-            ScaleIntensityd(['image']),
-            EnsureTyped(keys=SPATIAL_KEYS),
             RandFlipd(
                 keys=SPATIAL_KEYS, prob=0.5, spatial_axis=0),
             RandFlipd(keys=SPATIAL_KEYS, prob=0.5, spatial_axis=1),
