@@ -28,6 +28,7 @@ from monai.transforms import (
 )
 import os
 import numpy as np
+from tqdm import tqdm
 from VoronoiTransform import ComputeVoronoiMapsd
 from monai.data import decollate_batch, CacheDataset, DataLoader, list_data_collate, Dataset, GridPatchDataset, PatchIterd
 from monai.utils import set_determinism
@@ -95,7 +96,7 @@ class PlateletSegmentationModel(pl.LightningModule):
         test_files = get_data_dicts(self.data_dir, "test", self.task)
         # All keys for monai transforms that need to me spatially augmented together
         SPATIAL_KEYS = [
-            "image", "label", "voronoi", "weight_map"
+            "image", "label", "voronoi", "weight_map", "instances"
         ]
         # Only the label uses nearest neighbor; everything else (images, weight maps) uses bilinear
         MODES = [
@@ -103,9 +104,10 @@ class PlateletSegmentationModel(pl.LightningModule):
             "nearest",   # label
             "nearest",   # voronoi
             "bilinear",  # weight_map
+            "nearest",   # instances
         ]
 
-        train_transforms = Compose([
+        train_transforms = [
             RandFlipd(
                 keys=SPATIAL_KEYS, prob=0.5, spatial_axis=0),
             RandFlipd(keys=SPATIAL_KEYS, prob=0.5, spatial_axis=1),
@@ -122,38 +124,26 @@ class PlateletSegmentationModel(pl.LightningModule):
             RandScaleIntensityd(keys=["image"], factors=0.25, prob=0.3),
             RandShiftIntensityd(keys=["image"], offsets=0.25, prob=0.3),
             EnsureTyped(keys=SPATIAL_KEYS),
-        ])
+        ]
 
-        val_transforms = Compose([
+        base_transforms = [
             LoadImaged(keys=['image', 'label']),
             EnsureChannelFirstd(keys=["image", "label"],
                                 channel_dim="no_channel"),
             Lambdad(keys=["label"], func=lambda x: x / 255.0),
-            # RandSpatialCropd(keys=["image", "label"],
-            #                  roi_size=self.roi_size, random_size=False),
             ComputeVoronoiMapsd(keys=["label"]),
-            EnsureChannelFirstd(keys=["voronoi"], channel_dim="no_channel"),
+            EnsureChannelFirstd(keys=["voronoi", "instances"], channel_dim="no_channel"),
             ComputeWeightMapsd(
                 keys=["label"], concept=self.weight_map, mountain_sigma_sc=2, island_sigma_sc=5),
             ScaleIntensityd(['image']),
             EnsureTyped(keys=SPATIAL_KEYS),
-        ])
+        ]
 
-        test_transforms = Compose([
-            LoadImaged(keys=['image', 'label']),
-            EnsureChannelFirstd(keys=["image", "label"],
-                                channel_dim="no_channel"),
-            Lambdad(keys=["label"], func=lambda x: x / 255.0),
-            #RandSpatialCropd(keys=["image", "label"],
-            #                 roi_size=self.roi_size, random_size=False),
-            ScaleIntensityd(['image']),
-            EnsureTyped(keys=['image', 'label']),
-        ])
-
-        def create_random_patch_dataset(data_files, num_patches_per_image=25, train=False):
+        def create_random_patch_dataset(data_files, num_patches_per_image=25, train=False, cache_rate=1):
             all_patches = []
 
-            base_ds = Dataset(data=data_files, transform=val_transforms)
+            base_ds = Dataset(
+                data=data_files, transform=Compose(base_transforms))
 
             cropper = RandSpatialCropSamplesd(
                 keys=SPATIAL_KEYS,
@@ -162,32 +152,55 @@ class PlateletSegmentationModel(pl.LightningModule):
                 random_center=True,
             )
 
-            print("Generating and caching random patches...")
-            for i in range(len(base_ds)):
+            for i in tqdm(range(len(base_ds))):
                 full_data = base_ds[i]
                 patches = cropper(full_data)
                 all_patches.extend(patches)
 
             return CacheDataset(
                 data=all_patches,
-                transform=train_transforms if train else None,
-                cache_rate=0.4
+                transform=Compose(train_transforms) if train else None,
+                cache_rate=cache_rate
             )
 
-        self.train_ds = create_random_patch_dataset(train_files, 25, True)
-        self.val_ds = create_random_patch_dataset(val_files, 10, False)
-        self.test_ds = CacheDataset(
-            data=test_files,
-            transform=test_transforms,
-            cache_rate=0.4
-        )
+        if self.data_dir.endswith('/platelet'):
+            print('Creating platelet datasets from slices...')
+            self.train_ds = create_random_patch_dataset(
+                train_files, 25, True, cache_rate=1)
+            self.val_ds = create_random_patch_dataset(
+                val_files, 10, False, cache_rate=1)
+            self.test_ds = CacheDataset(
+                data=test_files,
+                transform=base_transforms,
+                cache_rate=1
+            )
+        elif self.data_dir.endswith('/mitolab'):
+            print('Creating mitolab datasets from images...')
+            self.train_ds = CacheDataset(
+                data=train_files,
+                transform=Compose([*base_transforms,
+                                   *train_transforms]),
+                cache_rate=0.5
+            )
+            self.val_ds = CacheDataset(
+                data=val_files,
+                transform=Compose([*base_transforms,]),
+                cache_rate=0.5
+            )
+            self.test_ds = CacheDataset(
+                data=test_files,
+                transform=Compose([*base_transforms,]),
+                cache_rate=0.5
+            )
+        else:
+            raise NotImplementedError()
 
     def train_dataloader(self):
         return DataLoader(
-            self.train_ds, batch_size=self.batch_size, num_workers=4, collate_fn=list_data_collate, shuffle=True)
+            self.train_ds, batch_size=self.batch_size, num_workers=8, collate_fn=list_data_collate, shuffle=True)
 
     def val_dataloader(self):
-        return DataLoader(self.val_ds, batch_size=1, num_workers=4, collate_fn=list_data_collate)
+        return DataLoader(self.val_ds, batch_size=1, num_workers=8, collate_fn=list_data_collate)
 
     def test_dataloader(self):
         return DataLoader(self.test_ds, batch_size=1, num_workers=4)
