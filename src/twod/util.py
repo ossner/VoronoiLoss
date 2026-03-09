@@ -40,16 +40,22 @@ class SemanticColorToBinaryd(MapTransform):
 
         return d
 
-def get_data_dicts(data_dir, split, task='alpha granule'):
+def get_data_dicts(data_dir, split, task='alpha granule', samples = -1):
     """
     Docstring for get_data_dicts
 
     :param data_dir: Parent directory that contains the splits. In this directory, this should contain train/ val/ (test/)
     :param split: The split to generate the data_dir for. Should be one of [train, val, test]
     """
-    images = sorted(glob(os.path.join(data_dir, split, "images", "*.png")))
-    labels = sorted(
-        glob(os.path.join(data_dir, split, "labels", task, "*.png")))
+    if samples == -1:
+        images = sorted(glob(os.path.join(data_dir, split, "images", "*.png")))
+        labels = sorted(
+            glob(os.path.join(data_dir, split, "labels", task, "*.png")))
+    else:
+        images = sorted(
+            glob(os.path.join(data_dir, split, "images", "*.png")))[:samples]
+        labels = sorted(
+            glob(os.path.join(data_dir, split, "labels", task, "*.png")))[:samples]
 
     return [{"image": img, "label": lbl} for img, lbl in zip(images, labels)]
 
