@@ -130,7 +130,7 @@ class PlateletSegmentationModel(pl.LightningModule):
             LoadImaged(keys=['image', 'label']),
             EnsureChannelFirstd(keys=["image", "label"],
                                 channel_dim="no_channel"),
-            Lambdad(keys=["label"], func=lambda x: x / 255.0),
+            Lambdad(keys=["label"], func=lambda x: (x > 0).astype(x.dtype)),
             ComputeVoronoiMapsd(keys=["label"]),
             EnsureChannelFirstd(keys=["voronoi", "instances"], channel_dim="no_channel"),
             ComputeWeightMapsd(
@@ -180,17 +180,17 @@ class PlateletSegmentationModel(pl.LightningModule):
                 data=train_files,
                 transform=Compose([*base_transforms,
                                    *train_transforms]),
-                cache_rate=0.5
+                cache_rate=0.4
             )
             self.val_ds = CacheDataset(
                 data=val_files,
                 transform=Compose([*base_transforms,]),
-                cache_rate=0.5
+                cache_rate=0.4
             )
             self.test_ds = CacheDataset(
                 data=test_files,
                 transform=Compose([*base_transforms,]),
-                cache_rate=0.5
+                cache_rate=0.4
             )
         else:
             raise NotImplementedError()
