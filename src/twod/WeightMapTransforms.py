@@ -28,11 +28,11 @@ class ComputeWeightMapsd(MapTransform):
             inst_np = instances.detach().cpu().numpy(
             ) if torch.is_tensor(instances) else instances
             vor_np = voronoi.detach().cpu().numpy() if torch.is_tensor(voronoi) else voronoi
-
-            if inst_np.ndim == 3:
-                inst_np = inst_np[0]
-            if vor_np.ndim == 3:
-                vor_np = vor_np[0]
+            
+            # Remove first dimension
+            inst_np = inst_np[0]
+            vor_np = vor_np[0] 
+            assert vor_np.ndim == 2 or vor_np.ndim == 3, f"Weight map computaion of mask dimension {vor_np.ndim} and shape {vor_np.shape} is not supported"
 
             # Instantiate map as unit tensor
             map = np.ones_like(inst_np, dtype=np.float32)

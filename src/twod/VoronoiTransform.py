@@ -5,14 +5,23 @@ from monai.transforms import MapTransform
 import torch
 
 
-def voronoi_map_from_binary_mask(mask_2d: np.ndarray):
+def voronoi_map_from_binary_mask(mask: np.ndarray):
     """
-    mask_2d: (H, W) binary ground truth
+    mask: (H, W, optional D) binary ground truth
     Returns:
-        voronoi_map: (H, W) int, Voronoi region id
-        cc_labels:   (H, W) int, connected components
+        voronoi_map: (H, W, optional D) int, Voronoi region id
+        cc_labels:   (H, W, optional D) int, connected components
     """
-    cc_labels, num_cc = label(mask_2d > 0, np.ones((3, 3), dtype=np.int32))
+    if mask.ndim == 2:
+        # 8-connectivity for 2d images
+        connector = np.ones((3, 3), dtype=np.int32)
+    elif mask.ndim == 3:
+        # 26-connectivity for 3d images
+        connector = np.ones((3, 3, 3), dtype=np.int32)
+    else:
+        raise IndexError(
+            f"Voronoi computaion of mask dimension {mask.ndim} and shape {mask.shape} is not supported")
+    cc_labels, num_cc = label(mask > 0, connector)
 
     if num_cc == 0:
         return np.zeros_like(cc_labels), cc_labels
@@ -23,13 +32,15 @@ def voronoi_map_from_binary_mask(mask_2d: np.ndarray):
         cc_labels == 0, return_indices=True
     )
 
-    voronoi_map = cc_labels[indices[0], indices[1]]
+    voronoi_map = cc_labels[tuple(indices)]
+    assert mask.shape == voronoi_map.shape, f"Mask shape {mask.shape} and voronoi map shape {voronoi_map.shape} not equal"
+    assert mask.shape == cc_labels.shape, f"Mask shape {mask.shape} and labelmap shape {cc_labels.shape} not equal"
     return voronoi_map, cc_labels
 
 
 class ComputeVoronoiMapsd(MapTransform):
     """
-    Computes 2D CC labels and Voronoi regions for CC-DiceCE.
+    Computes CC labels and Voronoi regions as a Monai transform for 2d or 3d labels.
     """
 
     def __call__(self, data):
@@ -40,12 +51,10 @@ class ComputeVoronoiMapsd(MapTransform):
             if isinstance(mask, torch.Tensor):
                 mask = mask.detach().cpu().numpy()
 
-            # Expect (1, H, W) or (H, W)
-            if mask.ndim == 3:
-                mask = mask[0]
-
+            # Expect (1, H, W, optional D)
+            mask = mask[0]
             voronoi, cc = voronoi_map_from_binary_mask(mask)
-            
+
             d[f"voronoi"] = torch.from_numpy(voronoi).long()
             d[f"instances"] = torch.from_numpy(cc).long()
 
