@@ -17,6 +17,7 @@ from monai.transforms import (
     EnsureTyped,
     SpatialPadd,
     RandRotated,
+    RandCropByPosNegLabeld,
     Zoomd,
     RandZoomd,
     RandGaussianNoised,
@@ -30,12 +31,13 @@ import os
 import numpy as np
 from tqdm import tqdm
 from VoronoiTransform import ComputeVoronoiMapsd
-from monai.data import decollate_batch, CacheDataset, DataLoader, list_data_collate, Dataset, GridPatchDataset, PatchIterd
+from monai.data import decollate_batch, CacheDataset, DataLoader, list_data_collate, Dataset, PatchDataset
 from monai.utils import set_determinism
+from monai.optimizers import WarmupCosineSchedule
 from util import get_data_dicts, _get_random_cmap
 import matplotlib
 import matplotlib.pyplot as plt
-from monai.inferers import sliding_window_inference
+import statistics
 from LossWrapper import WeightedLossWrapper
 from torchmetrics.classification import BinaryF1Score, BinaryPrecision, BinaryRecall
 from panoptica import Panoptica_Evaluator, Panoptica_Aggregator, Panoptica_Statistic
@@ -44,7 +46,7 @@ matplotlib.use("Agg")
 
 
 class PlateletSegmentationModel(pl.LightningModule):
-    def __init__(self, data_dir, loss_dict, weight_map='none', lr=1e-3, batch_size=8, seed=0, task='alpha granule', roi_size=(288, 288)):
+    def __init__(self, data_dir, loss_dict, weight_map='none', lr=1e-3, batch_size=8, seed=0, task='alpha granule'):
         super().__init__()
         # 2D UNet: 1 input channel (grayscale), 1 output channel (binary)
         self.model = UNet(
@@ -61,7 +63,6 @@ class PlateletSegmentationModel(pl.LightningModule):
             include_background=False,
             reduction="mean",
         )
-        self.roi_size = roi_size
         self.f1 = BinaryF1Score()
         self.recall = BinaryRecall()
         self.precision = BinaryPrecision()
@@ -70,8 +71,8 @@ class PlateletSegmentationModel(pl.LightningModule):
             AsDiscrete(threshold=0.5)
         ])
 
-        self.evaluator = None
-
+        self.evaluator = Panoptica_Evaluator.load_from_config("src/twod/eval/panoptica_config.yaml")
+        self.instance_f1 = []
         self.lr = lr
         self.batch_size = batch_size
         self.task = task
@@ -140,42 +141,51 @@ class PlateletSegmentationModel(pl.LightningModule):
         ]
 
         def create_random_patch_dataset(data_files, num_patches_per_image=25, train=False, cache_rate=1):
-            all_patches = []
-
-            base_ds = Dataset(
-                data=data_files, transform=Compose(base_transforms))
-
-            cropper = RandSpatialCropSamplesd(
-                keys=SPATIAL_KEYS,
-                roi_size=self.roi_size,
-                num_samples=num_patches_per_image,
-                random_center=True,
+            base_ds = CacheDataset(
+                data=data_files, 
+                transform=Compose(base_transforms), 
+                cache_rate=cache_rate,
+                num_workers=4
             )
 
-            for i in tqdm(range(len(base_ds))):
-                full_data = base_ds[i]
-                patches = cropper(full_data)
-                all_patches.extend(patches)
+            patcher = RandCropByPosNegLabeld(
+                keys=SPATIAL_KEYS,
+                label_key="label",
+                spatial_size=self.roi_size,
+                pos=2,
+                neg=1,
+                num_samples=num_patches_per_image,
+                image_key="image",
+                image_threshold=0,
+            )
 
-            return CacheDataset(
-                data=all_patches,
-                transform=Compose(train_transforms) if train else None,
-                cache_rate=cache_rate
+            return PatchDataset(
+                data=base_ds,
+                patch_func=patcher,
+                samples_per_image=num_patches_per_image,
+                transform=Compose(train_transforms) if train else None
             )
 
         if self.data_dir.endswith('/platelet'):
+            assert self.task in ["ag", 'cv'], f"Task {self.task} and dataset {self.data_dir} do not match"
             print('Creating platelet datasets from slices...')
+            self.roi_size = (288,288)
+            self.volume_quartiles = [460, 881, 1426.5] if self.task == 'ag' else  [160, 271, 451.75]
             self.train_ds = create_random_patch_dataset(
                 train_files, 25, True, cache_rate=1)
-            self.val_ds = create_random_patch_dataset(
-                val_files, 10, False, cache_rate=1)
-            self.test_ds = CacheDataset(
-                data=test_files,
-                transform=base_transforms,
+            self.val_ds = CacheDataset(
+                data=val_files,
+                transform=Compose([*base_transforms,]),
                 cache_rate=1
             )
+            self.test_ds = Dataset(
+                data=test_files,
+                transform=base_transforms,
+            )
         elif self.data_dir.endswith('/mitolab'):
+            assert self.task == "mit", f"Task {self.task} and dataset {self.data_dir} do not match"
             print('Creating mitolab datasets from images...')
+            self.volume_quartiles = [536, 1229, 2394]
             self.train_ds = CacheDataset(
                 data=train_files,
                 transform=Compose([*base_transforms,
@@ -187,36 +197,61 @@ class PlateletSegmentationModel(pl.LightningModule):
                 transform=Compose([*base_transforms,]),
                 cache_rate=0.4
             )
-            self.test_ds = CacheDataset(
+            self.test_ds = Dataset(
                 data=test_files,
                 transform=Compose([*base_transforms,]),
-                cache_rate=0.4
+            )
+        elif self.data_dir.endswith('/epfl'):
+            assert self.task == "mit", f"Task {self.task} and dataset {self.data_dir} do not match"
+            self.roi_size = (512, 512)
+            self.volume_quartiles = [1393.25, 2265, 3737.5]
+            print('Creating epfl dataset from slices...')
+            self.train_ds = create_random_patch_dataset(
+                train_files, 16, True, cache_rate=0.25)
+            self.val_ds = CacheDataset(
+                data=val_files,
+                transform=Compose([*base_transforms,]),
+                cache_rate=0.25
+            )
+            self.test_ds = Dataset(
+                data=test_files,
+                transform=base_transforms,
             )
         else:
             raise NotImplementedError()
 
     def train_dataloader(self):
         return DataLoader(
-            self.train_ds, batch_size=self.batch_size, num_workers=8, collate_fn=list_data_collate, shuffle=True)
+            self.train_ds, batch_size=self.batch_size, num_workers=8, collate_fn=list_data_collate)
 
     def val_dataloader(self):
         return DataLoader(self.val_ds, batch_size=1, num_workers=8, collate_fn=list_data_collate)
 
     def test_dataloader(self):
         return DataLoader(self.test_ds, batch_size=1, num_workers=4)
-
+        
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(), lr=self.lr)
-        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-            optimizer, mode="max", factor=0.5, patience=10
+        optimizer = torch.optim.AdamW(
+            self.parameters(), 
+            lr=self.lr, 
+            weight_decay=1e-5
         )
+        
+        scheduler = WarmupCosineSchedule(
+            optimizer,
+            t_total=self.trainer.max_epochs,
+            warmup_start_lr=1e-7,
+            warmup_steps=5
+        )
+
         return {
             "optimizer": optimizer,
             "lr_scheduler": {
                 "scheduler": scheduler,
-                "monitor": "val/dice",
+                "interval": "epoch",
+                "frequency": 1,
             },
-        }
+        }        
 
     def on_fit_start(self):
         total_params = sum(p.numel() for p in self.parameters())
@@ -227,7 +262,7 @@ class PlateletSegmentationModel(pl.LightningModule):
         tb.add_scalar("model/total_params", total_params, 0)
         tb.add_scalar("model/trainable_params", trainable_params, 0)
 
-        self._visualize_augmentations()
+        #self._visualize_augmentations()
 
     def _visualize_augmentations(self, num_samples=4):
         """Log multiple augmented versions of the same samples to visualize augmentations"""
@@ -288,6 +323,10 @@ class PlateletSegmentationModel(pl.LightningModule):
                  on_step=False, batch_size=images.shape[0])
         self.f1(preds, batch["label"])
         self.log("val/f1", self.f1, on_epoch=True)
+        if self.current_epoch > 10: # Panoptica instance wise needs a while before it can be applied due to instability early
+            self.instance_f1.append(self.evaluator.evaluate(preds.detach().cpu().numpy().squeeze(), batch['label'].detach().cpu().numpy().squeeze(), log_times=False, verbose=False)['instance'].rq)
+        else:
+            self.instance_f1.append(0.5)
         self.precision(preds, batch["label"])
         self.log("val/precision", self.precision, on_epoch=True)
         self.recall(preds, batch["label"])
@@ -295,8 +334,22 @@ class PlateletSegmentationModel(pl.LightningModule):
 
         if self.current_epoch % 10 == 0 and len(self.validation_vis_samples) < 4:
             self.validation_vis_samples.append((batch, outputs))
-
         return val_loss
+
+    def on_validation_epoch_end(self):
+        mean_dice = self.dice.aggregate().item()
+        self.log("val/instance_f1", statistics.mean(self.instance_f1), prog_bar=False)
+        self.instance_f1 = []
+        self.log("val/dice", mean_dice, prog_bar=True)
+        self.dice.reset()
+
+        if mean_dice > self.best_val_dice:
+            self.best_val_dice = mean_dice
+            self.best_val_epoch = self.current_epoch
+        if self.validation_vis_samples:
+            self._visualize_val_samples(self.validation_vis_samples)
+            self.validation_vis_samples.clear()
+            
 
     def _visualize_val_samples(self, samples):
         # Ensure we don't try to plot more than we have in the batch
@@ -353,18 +406,6 @@ class PlateletSegmentationModel(pl.LightningModule):
         self.logger.experiment.add_figure("val/samples", fig, self.global_step)
         plt.close(fig)
 
-    def on_validation_epoch_end(self):
-        mean_dice = self.dice.aggregate().item()
-        self.log("val/dice", mean_dice, prog_bar=True)
-        self.dice.reset()
-
-        if mean_dice > self.best_val_dice:
-            self.best_val_dice = mean_dice
-            self.best_val_epoch = self.current_epoch
-        if self.validation_vis_samples:
-            self._visualize_val_samples(self.validation_vis_samples)
-            self.validation_vis_samples.clear()
-
     def on_fit_end(self):
         print(
             f"Training completed. Best Dice Score: {self.best_val_dice:.4f} at Epoch: {self.best_val_epoch}")
@@ -380,8 +421,6 @@ class PlateletSegmentationModel(pl.LightningModule):
     def on_test_start(self):
         self.recall.reset()
         self.precision.reset()
-        self.evaluator = Panoptica_Evaluator.load_from_config(
-            "src/twod/eval/panoptica_config.yaml")
         self.aggregator = Panoptica_Aggregator(
             panoptica_evaluator=self.evaluator, output_file=f'{self.logger.log_dir}/eval.tsv')
 
