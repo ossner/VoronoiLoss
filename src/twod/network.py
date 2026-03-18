@@ -240,7 +240,7 @@ class PlateletSegmentationModel(pl.LightningModule):
         scheduler = WarmupCosineSchedule(
             optimizer,
             t_total=self.trainer.max_epochs,
-            warmup_start_lr=1e-7,
+            warmup_multiplier=1e-4,
             warmup_steps=5
         )
 
