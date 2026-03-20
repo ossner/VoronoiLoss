@@ -447,7 +447,7 @@ class PlateletSegmentationModel(pl.LightningModule):
         for i, gt_q in enumerate(gt_quartiles):
             if np.sum(gt_q) == 0:
                 continue
-            self.quartile_recalls[f"q{i}"].append(self.evaluator.evaluate(preds, gt_q)['instance'].rec)
+            self.quartile_recalls[f"q{i}"].append(self.evaluator.evaluate(preds, gt_q, log_times=False, verbose=False)['instance'].rec)
         if True:
             # Compute masks
             tp = (preds == 1) & (labels == 1)
