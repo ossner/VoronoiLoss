@@ -25,7 +25,7 @@ def get_callbacks(monitor_metric="val/dice", mode="max", patience=25):
         ),
         ModelCheckpoint(
             filename="best_f1",
-            monitor="val/f1",
+            monitor="val/instance_f1",
             mode="max",
             save_top_k=1
         ),
@@ -36,11 +36,11 @@ def get_callbacks(monitor_metric="val/dice", mode="max", patience=25):
             every_n_epochs=1,
             save_on_train_epoch_end=True
         ),
-        EarlyStopping(
-            monitor=monitor_metric,
-            mode=mode,
-            patience=patience
-        )
+        #EarlyStopping(
+        #    monitor=monitor_metric,
+        #    mode=mode,
+        #    patience=patience
+        #)
     ]
 
 
@@ -70,13 +70,15 @@ def run_train(args):
             model = PlateletSegmentationModel(
                 data_dir=f'data/organelles/{args.dataset}',
                 loss_dict=[('Dice', WeightedDice(), 1),
-                           ('CE', WeightedBCE(), 1)],
+                           ('CE', WeightedBCE(), 1),
+                           #('CCDiceCE', CCDiceCE(), 1),
+                           #('BlobDiceCE', BlobDiceCE(), 1)
+                           ],
                 weight_map=w_map,
                 batch_size=args.batch_size,
                 lr=args.lr,
                 seed=args.seed,
                 task=task,
-                roi_size=(288, 288)
             )
 
             trainer.fit(model)
