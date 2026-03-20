@@ -17,7 +17,6 @@ class WeightedLossWrapper(torch.nn.Module):
         sum_weights = sum([weight for _,_,weight in loss_dict])
         self.weights = {name: (float(weight)/float(sum_weights)) for name, _, weight in loss_dict}
 
-    # TODO: This is getting unwieldy with the number of potential arguments, it would be more clean to pass the batch as a whole and only use the parts that are used maybe?
     def forward(self, y_pred: torch.Tensor, batch: torch.Tensor) -> torch.Tensor:
         total = torch.zeros((), device=y_pred.device, dtype=y_pred.dtype)
         for name, module in self.losses.items():

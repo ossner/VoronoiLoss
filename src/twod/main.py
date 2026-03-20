@@ -42,57 +42,80 @@ def get_callbacks(monitor_metric="val/dice", mode="max", patience=25):
         #    patience=patience
         #)
     ]
+    
+def build_loss_dict(config_str):
+    """
+    config_str: string of digits, e.g. "112", "110"
+    returns: list of (name, loss_fn, weight)
+    """
+
+    loss_registry = [
+        ('Dice', WeightedDice()),
+        ('CE', WeightedBCE()),
+        ('CCDiceCE', CCDiceCE()),
+    ]
+
+    if len(config_str) != len(loss_registry):
+        raise ValueError(
+            f"Expected config string of length {len(loss_registry)}, got {len(config_str)}"
+        )
+
+    loss_dict = []
+
+    for digit, (name, loss_fn) in zip(config_str, loss_registry):
+        weight = int(digit)
+        if weight > 0:
+            loss_dict.append((name, loss_fn, weight))
+
+    return loss_dict
 
 
 def run_train(args):
     """Iterates through tasks and weight maps for sequential training."""
     for task in args.tasks:
         for w_map in args.weight_maps:
-            print(f"\nStarting Training | Task: {args.dataset}_{task} | Map: {w_map}")
+            for losses in args.losses:
+                print(f"\nStarting Training | Task: {args.dataset}_{task} | Map: {w_map} | Loss config: {losses}")
 
-            logger = TensorBoardLogger(
-                save_dir=args.log_dir,
-                name=f"{args.dataset}_{task}/{w_map}",
-                default_hp_metric=False
-            )
+                logger = TensorBoardLogger(
+                    save_dir=args.log_dir,
+                    name=f"{losses}/{args.dataset}_{task}/{w_map}",
+                    default_hp_metric=False
+                )
 
-            trainer = pl.Trainer(
-                max_epochs=args.epochs,
-                deterministic=True,
-                accelerator="gpu",
-                devices=1,
-                precision="16-mixed",
-                logger=logger,
-                callbacks=get_callbacks(),
-                log_every_n_steps=25
-            )
+                trainer = pl.Trainer(
+                    max_epochs=args.epochs,
+                    deterministic=True,
+                    accelerator="gpu",
+                    devices=1,
+                    precision="16-mixed",
+                    logger=logger,
+                    callbacks=get_callbacks(),
+                    log_every_n_steps=25
+                )
 
-            model = PlateletSegmentationModel(
-                data_dir=f'data/organelles/{args.dataset}',
-                loss_dict=[('Dice', WeightedDice(), 1),
-                           ('CE', WeightedBCE(), 1),
-                           #('CCDiceCE', CCDiceCE(), 1),
-                           #('BlobDiceCE', BlobDiceCE(), 1)
-                           ],
-                weight_map=w_map,
-                batch_size=args.batch_size,
-                lr=args.lr,
-                seed=args.seed,
-                task=task,
-            )
+                model = PlateletSegmentationModel(
+                    data_dir=f'data/organelles/{args.dataset}',
+                    loss_dict=build_loss_dict(losses),
+                    weight_map=w_map,
+                    batch_size=args.batch_size,
+                    lr=args.lr,
+                    seed=args.seed,
+                    task=task,
+                )
 
-            trainer.fit(model)
+                trainer.fit(model)
 
 
 def run_eval(args):
     """Iterates through checkpoints for evaluation."""
-    for loss_variant in args.eval_losses:
+    for loss_variant in args.losses:
         for task in args.tasks:
             for w_map in args.weight_maps:
                 print(
                     f"\nEvaluating | Loss: {loss_variant} | Task: {task} | Map: {w_map}")
 
-                ckpt_path = f"{args.log_dir}/{loss_variant}/{task}/{w_map}/version_0/checkpoints/best_dice.ckpt"
+                ckpt_path = f"{args.log_dir}/{loss_variant}/{args.dataset}_{task}/{w_map}/version_0/checkpoints/best_dice.ckpt"
 
                 logger = TensorBoardLogger(
                     save_dir='src/twod/eval/logs',
@@ -100,11 +123,10 @@ def run_eval(args):
                     default_hp_metric=False
                 )
 
-
                 try:
                     model = PlateletSegmentationModel.load_from_checkpoint(
                         ckpt_path,
-                        data_dir=f'data/organelles/{args.dataset}/',
+                        data_dir=f'data/organelles/{args.dataset}',
                         task=task,
                         weights_only=False
                     )
@@ -137,7 +159,7 @@ def main():
     parser.add_argument('--log_dir', type=str, default='src/twod/logs')
 
     parser.add_argument('--losses', nargs='+',
-                        default=['110', '111'], help="Loss folders to look for during eval")
+                        default=['110', '112'], help="Loss config relative weights (Dice:CE:CCDiceCE)")
 
     args = parser.parse_args()
 
