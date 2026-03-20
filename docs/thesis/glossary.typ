@@ -16,6 +16,16 @@
     short: "IEEE",
     long: "Institute of Electrical and Electronics Engineers",
   ),
+  (
+    key: "miqa",
+    short: "MIQA",
+    long: "Medical Imaging Quality Assessment",
+  ),
+  (
+    key: "tda",
+    short: "TDA",
+    long: "Topological Data Analysis",
+  ),
   // Add a PLURAL form
   (
     key: "potato",

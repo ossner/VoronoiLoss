@@ -142,8 +142,7 @@
 
 #include "chapters/1_Introduction.typ"
 #include "chapters/2_Related_Work.typ"
-
-//#include "Chapter_Background.typ"
+#include "chapters/3_Methodology.typ"
 
 //#include "Chapter_RelatedWork.typ"
 
