@@ -133,6 +133,6 @@ def split_gt_by_volume(gt, quartiles):
         else:
             q = 3
 
-        gt_q[q][inst_mask] = inst_id
+        gt_q[q][inst_mask] = 1
 
     return gt_q

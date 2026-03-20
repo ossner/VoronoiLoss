@@ -34,7 +34,7 @@ from VoronoiTransform import ComputeVoronoiMapsd
 from monai.data import decollate_batch, CacheDataset, DataLoader, list_data_collate, Dataset, PatchDataset
 from monai.utils import set_determinism
 from monai.optimizers import WarmupCosineSchedule
-from util import get_data_dicts, _get_random_cmap
+from util import get_data_dicts, _get_random_cmap, split_gt_by_volume
 import matplotlib
 import matplotlib.pyplot as plt
 import statistics
@@ -409,7 +409,6 @@ class PlateletSegmentationModel(pl.LightningModule):
     def on_fit_end(self):
         print(
             f"Training completed. Best Dice Score: {self.best_val_dice:.4f} at Epoch: {self.best_val_epoch}")
-
         self.logger.log_hyperparams(
             params=dict(self.hparams),
             metrics={
@@ -421,6 +420,12 @@ class PlateletSegmentationModel(pl.LightningModule):
     def on_test_start(self):
         self.recall.reset()
         self.precision.reset()
+        self.quartile_recalls = {
+            "q0": [],
+            "q1": [],
+            "q2": [],
+            "q3": []
+        }
         self.aggregator = Panoptica_Aggregator(
             panoptica_evaluator=self.evaluator, output_file=f'{self.logger.log_dir}/eval.tsv')
 
@@ -438,6 +443,11 @@ class PlateletSegmentationModel(pl.LightningModule):
         labels = labels.cpu().numpy().squeeze()
 
         self.aggregator.evaluate(preds, labels, batch_idx)
+        gt_quartiles = split_gt_by_volume(labels, self.volume_quartiles)
+        for i, gt_q in enumerate(gt_quartiles):
+            if np.sum(gt_q) == 0:
+                continue
+            self.quartile_recalls[f"q{i}"].append(self.evaluator.evaluate(preds, gt_q)['instance'].rec)
         if True:
             # Compute masks
             tp = (preds == 1) & (labels == 1)
@@ -471,8 +481,16 @@ class PlateletSegmentationModel(pl.LightningModule):
 
         statistics_obj = Panoptica_Statistic.from_file(
             f'{self.logger.log_dir}/eval.tsv')
-        summary = statistics_obj.get_summary_dict(
-            include_across_group=False)['instance']
+        summary = statistics_obj.get_summary_dict(include_across_group=False)['instance']
+        mean_quartile_recall = {}
+
+        for q in self.quartile_recalls:
+            values = self.quartile_recalls[q]
+            if len(values) == 0:
+                mean_quartile_recall[q] = 0
+            else:
+                mean_quartile_recall[q] = np.mean(values)
+                
         metrics_to_log = {
             "test/global/dice":      summary['global_bin_dsc'].avg,
             "test/global/precision": precision,
@@ -482,6 +500,10 @@ class PlateletSegmentationModel(pl.LightningModule):
             "test/instance/fp":        summary['fp'].avg,
             "test/instance/fn":        summary['fn'].avg,
             "test/instance/precision": summary['prec'].avg,
+            "test/instance/recall_q0":    mean_quartile_recall['q0'],
+            "test/instance/recall_q1":    mean_quartile_recall['q1'],
+            "test/instance/recall_q2":    mean_quartile_recall['q2'],
+            "test/instance/recall_q3":    mean_quartile_recall['q3'],
             "test/instance/recall":    summary['rec'].avg,
             "test/instance/f1":         summary['rq'].avg,
             "test/instance/assd":      summary['sq_assd'].avg,
