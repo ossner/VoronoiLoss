@@ -5,7 +5,7 @@ from monai.transforms import MapTransform
 import torch
 
 
-def voronoi_map_from_binary_mask(mask: np.ndarray):
+def voronoi_map_from_binary_mask(mask: np.ndarray, min_size=14):
     """
     mask: (H, W, optional D) binary ground truth
     Returns:
@@ -22,6 +22,21 @@ def voronoi_map_from_binary_mask(mask: np.ndarray):
         raise IndexError(
             f"Voronoi computaion of mask dimension {mask.ndim} and shape {mask.shape} is not supported")
     cc_labels, num_cc = label(mask > 0, connector)
+
+    if num_cc == 0:
+        return np.zeros_like(cc_labels), cc_labels
+    
+    # --- filter small components as segmentation errors---
+    component_sizes = np.bincount(cc_labels.ravel())
+    remove_ids = np.where(component_sizes < min_size)[0]
+    remove_ids = remove_ids[remove_ids != 0]  # keep background
+
+    filtered_mask = mask.copy()
+    for rid in remove_ids:
+        filtered_mask[cc_labels == rid] = 0
+
+    # relabel after filtering
+    cc_labels, num_cc = label(filtered_mask > 0, connector)
 
     if num_cc == 0:
         return np.zeros_like(cc_labels), cc_labels
@@ -55,7 +70,6 @@ class ComputeVoronoiMapsd(MapTransform):
             mask = mask[0]
             voronoi, cc = voronoi_map_from_binary_mask(mask)
 
-            d[f"voronoi"] = torch.from_numpy(voronoi).long()
-            d[f"instances"] = torch.from_numpy(cc).long()
-
+            d["voronoi"] = torch.from_numpy(voronoi).long()
+            d["instances"] = torch.from_numpy(cc).long()
         return d
