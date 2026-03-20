@@ -5,6 +5,7 @@ import scipy.ndimage as ndi
 from monai.transforms import MapTransform
 import numpy as np
 from matplotlib.colors import ListedColormap
+from scipy.ndimage import label
 
 
 SEMANTIC_COLORS = np.array([
@@ -108,3 +109,30 @@ def _get_random_cmap(max_val):
     colors = np.random.rand(int(max_val) + 1, 3)
     colors[0] = [0, 0, 0]  # Background is black
     return ListedColormap(colors)
+
+
+def split_gt_by_volume(gt, quartiles):
+    """
+    Returns 4 GT masks containing only instances in each quartile.
+    """
+    gt_q = [np.zeros_like(gt) for _ in range(4)]
+    gt, _ = label(gt > 0, np.ones((3,) * gt.ndim, dtype=int))
+    instance_ids = np.unique(gt)
+    instance_ids = instance_ids[instance_ids != 0]
+
+    for inst_id in instance_ids:
+        inst_mask = gt == inst_id
+        volume = inst_mask.sum()
+
+        if volume <= quartiles[0]:
+            q = 0
+        elif volume <= quartiles[1]:
+            q = 1
+        elif volume <= quartiles[2]:
+            q = 2
+        else:
+            q = 3
+
+        gt_q[q][inst_mask] = inst_id
+
+    return gt_q
