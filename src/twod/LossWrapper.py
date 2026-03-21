@@ -38,6 +38,7 @@ class WeightedDice(torch.nn.Module):
         y_pred: torch.Tensor,  # logits (B,1,H,W)
         batch: torch.Tensor,
         mask_map: torch.Tensor = None,
+        weighted = False
     ) -> torch.Tensor:
 
         probs = torch.sigmoid(y_pred)
@@ -53,9 +54,9 @@ class WeightedDice(torch.nn.Module):
             mask = (mask_map == r_id).float()
             m_probs = probs * mask
             m_y = y * mask
-            m_weights = weight_map * mask
-            intersection = torch.sum(m_weights * m_probs * m_y)
-            denominator = torch.sum(m_weights * (m_probs**2 + m_y**2))
+            mask = weight_map * mask if weighted else mask
+            intersection = torch.sum(mask * m_probs * m_y)
+            denominator = torch.sum(mask * (m_probs**2 + m_y**2))
 
             dice_score = (2.0 * intersection + self.eps) / (denominator + self.eps)
             region_losses.append(1.0 - dice_score)
@@ -71,22 +72,23 @@ class WeightedBCE(torch.nn.Module):
         y_pred: torch.Tensor,  # logits (B,1,H,W)
         batch: torch.Tensor,
         mask_map: torch.Tensor = None,
+        weighted = False
     ) -> torch.Tensor:
         y = batch['label']
         weight_map = batch['weight_map']
 
         bce_map = F.binary_cross_entropy_with_logits(y_pred, y, reduction="none")  # (B,1,H,W)
-        weighted = bce_map * weight_map
+        bce_map = bce_map * weight_map if weighted else bce_map
         
         if mask_map is None:
-            return weighted.mean()
+            return bce_map.mean()
         
         region_ids = torch.unique(mask_map)
         region_losses = []
 
         for r_id in region_ids:
             mask = (mask_map == r_id)
-            region_loss = weighted[mask].mean()
+            region_loss = bce_map[mask].mean()
             region_losses.append(region_loss)
             
         return torch.stack(region_losses).mean()
@@ -103,4 +105,4 @@ class CCDiceCE(torch.nn.Module):
         y_pred: torch.Tensor,  # logits (B,1,H,W)
         batch: torch.Tensor,
     ) -> torch.Tensor:
-        return self.bce(y_pred, batch, batch['voronoi']) + self.dice(y_pred, batch, batch['voronoi'])
+        return self.bce(y_pred, batch, batch['voronoi'], weighted = True) + self.dice(y_pred, batch, batch['voronoi'], weighted = True)
