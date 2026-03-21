@@ -6,7 +6,7 @@ from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 from monai.utils.enums import TraceKeys
 
 # Local imports
-from network import PlateletSegmentationModel
+from network import PlateletSegmentationModel, BrainSegmentationModel
 from LossWrapper import WeightedDice, WeightedBCE, CCDiceCE
 
 # Register safe globals for torch 2.0+ checkpoint loading
@@ -94,8 +94,18 @@ def run_train(args):
                     log_every_n_steps=25
                 )
 
-                model = PlateletSegmentationModel(
-                    data_dir=f'data/organelles/{args.dataset}',
+                #model = PlateletSegmentationModel(
+                #    data_dir=f'data/organelles/{args.dataset}',
+                #    loss_dict=build_loss_dict(losses),
+                #    weight_map=w_map,
+                #    batch_size=args.batch_size,
+                #    lr=args.lr,
+                #    seed=args.seed,
+                #    task=task,
+                #)
+
+                model = BrainSegmentationModel(
+                    data_dir=f'data/brain/{args.dataset}',
                     loss_dict=build_loss_dict(losses),
                     weight_map=w_map,
                     batch_size=args.batch_size,
@@ -159,7 +169,7 @@ def main():
     parser.add_argument('--log_dir', type=str, default='src/twod/logs')
 
     parser.add_argument('--losses', nargs='+',
-                        default=['110', '112'], help="Loss config relative weights (Dice:CE:CCDiceCE)")
+                        default=['111', '113'], help="Loss config relative weights (Dice:CE:CCDiceCE)")
 
     args = parser.parse_args()
 

@@ -41,13 +41,14 @@ class SemanticColorToBinaryd(MapTransform):
 
         return d
 
-def get_data_dicts(data_dir, split, task='alpha granule', samples = -1):
+def get_data_dicts(data_dir, split, task='alpha granule', samples = -1, threed = False):
     """
     Docstring for get_data_dicts
 
     :param data_dir: Parent directory that contains the splits. In this directory, this should contain train/ val/ (test/)
     :param split: The split to generate the data_dir for. Should be one of [train, val, test]
     """
+    # TODO: Ugly. Refactor
     if samples == -1:
         images = sorted(glob(os.path.join(data_dir, split, "images", "*.png")))
         labels = sorted(
@@ -59,6 +60,31 @@ def get_data_dicts(data_dir, split, task='alpha granule', samples = -1):
             glob(os.path.join(data_dir, split, "labels", task, "*.png")))[:samples]
 
     return [{"image": img, "label": lbl} for img, lbl in zip(images, labels)]
+    
+    
+def get_data_dicts_3d(data_dir, split):
+    """
+    Docstring for get_data_dicts_3d
+
+    :param data_dir: Parent directory that contains the splits. In this directory, this should contain train/ val/ (test/)
+    :param split: The split to generate the data_dir for. Should be one of [train, val, test]
+    """
+    subject_dirs = sorted(glob(os.path.join(data_dir, split, "images", "*")))
+    label_files = sorted(glob(os.path.join(data_dir, split, "labels", "*.nii.gz")))
+    data_dicts = []
+
+    for subj_dir, lbl in zip(subject_dirs, label_files):
+        channel_files = sorted(glob(os.path.join(subj_dir, "*.nii.gz")))
+        
+        if not channel_files or not os.path.exists(lbl):
+            continue
+            
+        data_dicts.append({
+            "image": channel_files,
+            "label": lbl
+        })
+
+    return data_dicts
 
 
 def instance_f1_score(pred, gt, iou_thresh=0.5):
