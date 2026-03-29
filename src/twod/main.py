@@ -7,11 +7,11 @@ from monai.utils.enums import TraceKeys
 
 # Local imports
 from network import PlateletSegmentationModel, BrainSegmentationModel
-from LossWrapper import WeightedDice, WeightedBCE, CCDiceCE
+from LossWrapper import WeightedDice, WeightedBCE, CCDiceCE, InstanceSegmentationLossGT, InstanceCenterLoss, CCTversky
 
 # Register safe globals for torch 2.0+ checkpoint loading
 torch.serialization.add_safe_globals(
-    [WeightedDice, WeightedBCE, CCDiceCE, TraceKeys])
+    [WeightedDice, WeightedBCE, CCDiceCE, TraceKeys, InstanceSegmentationLossGT, InstanceCenterLoss, CCTversky])
 
 
 def get_callbacks(monitor_metric="val/dice", mode="max", patience=25):
@@ -25,7 +25,7 @@ def get_callbacks(monitor_metric="val/dice", mode="max", patience=25):
         ),
         ModelCheckpoint(
             filename="best_f1",
-            monitor="val/instance_f1",
+            monitor="val/ccdice",
             mode="max",
             save_top_k=1
         ),
@@ -53,7 +53,8 @@ def build_loss_dict(config_str):
         ('Dice', WeightedDice()),
         ('CE', WeightedBCE()),
         ('CCDiceCE', CCDiceCE()),
-    ]
+        ("CCTversky", CCTversky()),
+        ]
 
     if len(config_str) != len(loss_registry):
         raise ValueError(
@@ -91,21 +92,11 @@ def run_train(args):
                     precision="16-mixed",
                     logger=logger,
                     callbacks=get_callbacks(),
-                    log_every_n_steps=25
+                    log_every_n_steps=10
                 )
 
-                #model = PlateletSegmentationModel(
-                #    data_dir=f'data/organelles/{args.dataset}',
-                #    loss_dict=build_loss_dict(losses),
-                #    weight_map=w_map,
-                #    batch_size=args.batch_size,
-                #    lr=args.lr,
-                #    seed=args.seed,
-                #    task=task,
-                #)
-
-                model = BrainSegmentationModel(
-                    data_dir=f'data/brain/{args.dataset}',
+                model = PlateletSegmentationModel(
+                    data_dir=f'data/organelles/{args.dataset}',
                     loss_dict=build_loss_dict(losses),
                     weight_map=w_map,
                     batch_size=args.batch_size,
@@ -113,6 +104,16 @@ def run_train(args):
                     seed=args.seed,
                     task=task,
                 )
+
+                #model = BrainSegmentationModel(
+                #    data_dir=f'data/brain/{args.dataset}',
+                #    loss_dict=build_loss_dict(losses),
+                #    weight_map=w_map,
+                #    batch_size=args.batch_size,
+                #    lr=args.lr,
+                #    seed=args.seed,
+                #    task=task,
+                #)
 
                 trainer.fit(model)
 
@@ -164,7 +165,7 @@ def main():
     parser.add_argument('--batch_size', type=int, default=8)
     parser.add_argument('--lr', type=float, default=0.001)
     parser.add_argument('--epochs', type=int, default=-1)
-    parser.add_argument('--seed', type=int, default=0)
+    parser.add_argument('--seed', type=int, default=42)
 
     parser.add_argument('--log_dir', type=str, default='src/twod/logs')
 
