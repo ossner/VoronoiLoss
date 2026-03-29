@@ -6,7 +6,11 @@ from monai.transforms import MapTransform
 import numpy as np
 from matplotlib.colors import ListedColormap
 from scipy.ndimage import label
-
+from monai.data import CacheDataset, PatchDataset
+from monai.transforms import (
+    Compose,
+    RandCropByPosNegLabeld,
+)
 
 SEMANTIC_COLORS = np.array([
     [0,   0,   0,   0],        # 0: Background
@@ -62,15 +66,20 @@ def get_data_dicts(data_dir, split, task='alpha granule', samples = -1, threed =
     return [{"image": img, "label": lbl} for img, lbl in zip(images, labels)]
     
     
-def get_data_dicts_3d(data_dir, split):
+def get_data_dicts_3d(data_dir, split, samples = -1):
     """
     Docstring for get_data_dicts_3d
 
     :param data_dir: Parent directory that contains the splits. In this directory, this should contain train/ val/ (test/)
     :param split: The split to generate the data_dir for. Should be one of [train, val, test]
     """
-    subject_dirs = sorted(glob(os.path.join(data_dir, split, "images", "*")))
-    label_files = sorted(glob(os.path.join(data_dir, split, "labels", "*.nii.gz")))
+    if samples == -1:
+        subject_dirs = sorted(glob(os.path.join(data_dir, split, "images", "*")))
+        label_files = sorted(glob(os.path.join(data_dir, split, "labels", "*.nii.gz")))
+    else:
+        subject_dirs = sorted(glob(os.path.join(data_dir, split, "images", "*")))[:samples]
+        label_files = sorted(glob(os.path.join(data_dir, split, "labels", "*.nii.gz")))[:samples]
+
     data_dicts = []
 
     for subj_dir, lbl in zip(subject_dirs, label_files):
@@ -162,3 +171,29 @@ def split_gt_by_volume(gt, quartiles):
         gt_q[q][inst_mask] = 1
 
     return gt_q
+
+def create_random_patch_dataset(data_files, cropKeys, base_transforms, train_transforms, roi_size, num_patches_per_image, cache_rate):
+    base_ds = CacheDataset(
+        data=data_files,
+        transform=Compose(base_transforms),
+        cache_rate=cache_rate,
+        num_workers=4
+    )
+
+    patcher = RandCropByPosNegLabeld(
+        keys=cropKeys,
+        label_key="label",
+        image_key="image",
+        spatial_size=roi_size,
+        pos=2,
+        neg=1,
+        num_samples=num_patches_per_image,
+        image_threshold=0,
+    )
+
+    return PatchDataset(
+        data=base_ds,
+        patch_func=patcher,
+        samples_per_image=num_patches_per_image,
+        transform=Compose(train_transforms)
+    )
