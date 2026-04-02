@@ -37,6 +37,7 @@ import matplotlib.pyplot as plt
 import statistics
 from PIL import Image
 from LossWrapper import WeightedLossWrapper
+from lightning.pytorch.utilities import grad_norm
 from torchmetrics.classification import BinaryF1Score, BinaryPrecision, BinaryRecall, BinaryFBetaScore
 from panoptica import Panoptica_Evaluator, Panoptica_Aggregator, Panoptica_Statistic
 from WeightMapTransforms import ComputeWeightMapsd
@@ -289,6 +290,10 @@ class PlateletSegmentationModel(pl.LightningModule):
         self.log("train/lr", self.optimizers(
         ).param_groups[0]["lr"], on_step=False, on_epoch=True)
         return loss
+
+    def on_before_optimizer_step(self, optimizer):
+        total_grad_norm = grad_norm(self, norm_type=2)
+        self.log_dict(total_grad_norm)
 
     def validation_step(self, batch, batch_idx):
         images = batch["image"]
