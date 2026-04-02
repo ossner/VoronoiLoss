@@ -7,11 +7,11 @@ from monai.utils.enums import TraceKeys
 
 # Local imports
 from network import PlateletSegmentationModel, BrainSegmentationModel
-from LossWrapper import WeightedDice, WeightedBCE, CCDiceCE, InstanceSegmentationLossGT, InstanceCenterLoss, CCTversky
+from LossWrapper import WeightedDice, WeightedBCE, CCDiceCE, CCTversky
 
 # Register safe globals for torch 2.0+ checkpoint loading
 torch.serialization.add_safe_globals(
-    [WeightedDice, WeightedBCE, CCDiceCE, TraceKeys, InstanceSegmentationLossGT, InstanceCenterLoss, CCTversky])
+    [WeightedDice, WeightedBCE, CCDiceCE, TraceKeys, CCTversky])
 
 
 def get_callbacks(monitor_metric="val/dice", mode="max", patience=25):
@@ -24,7 +24,7 @@ def get_callbacks(monitor_metric="val/dice", mode="max", patience=25):
             save_top_k=1
         ),
         ModelCheckpoint(
-            filename="best_f1",
+            filename="best_ccdice",
             monitor="val/ccdice",
             mode="max",
             save_top_k=1
@@ -126,7 +126,7 @@ def run_eval(args):
                 print(
                     f"\nEvaluating | Loss: {loss_variant} | Task: {task} | Map: {w_map}")
 
-                ckpt_path = f"{args.log_dir}/{loss_variant}/{args.dataset}_{task}/{w_map}/version_0/checkpoints/best_dice.ckpt"
+                ckpt_path = f"{args.log_dir}/{loss_variant}/{args.dataset}_{task}/{w_map}/version_0/checkpoints/final.ckpt"
 
                 logger = TensorBoardLogger(
                     save_dir='src/twod/eval/logs',
