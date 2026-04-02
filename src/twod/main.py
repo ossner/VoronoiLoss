@@ -89,7 +89,8 @@ def run_train(args):
                     deterministic=True,
                     accelerator="gpu",
                     devices=1,
-                    precision="16-mixed",
+                    precision="32", 
+                    detect_anomaly=True,
                     logger=logger,
                     callbacks=get_callbacks(),
                     log_every_n_steps=10
