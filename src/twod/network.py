@@ -34,6 +34,7 @@ from sklearn.metrics import fbeta_score
 import matplotlib
 import matplotlib.pyplot as plt
 import statistics
+from PIL import Image
 from LossWrapper import WeightedLossWrapper
 from torchmetrics.classification import BinaryF1Score, BinaryPrecision, BinaryRecall, BinaryFBetaScore
 from panoptica import Panoptica_Evaluator, Panoptica_Aggregator, Panoptica_Statistic
@@ -77,6 +78,7 @@ class PlateletSegmentationModel(pl.LightningModule):
             "src/twod/eval/panoptica_config.yaml")
         self.instance_f1 = []
         self.instance_recall = []
+        self.instance_dice = []
         self.lr = lr
         self.batch_size = batch_size
         self.task = task
@@ -310,9 +312,11 @@ class PlateletSegmentationModel(pl.LightningModule):
                 preds_np, labels_np, log_times=False, verbose=False)['instance']
             self.instance_f1.append(panoptica_metrics.rq)
             self.instance_recall.append(panoptica_metrics.rec)
+            self.instance_dice.append(panoptica_metrics.sq_dsc)
         else:
             self.instance_f1.append(0.5)
             self.instance_recall.append(0.5)
+            self.instance_dice.append(0.5)
         if preds_np.ndim == 2:
             preds_np = preds_np[None, ...]
             labels_np = labels_np[None, ...]
@@ -340,9 +344,13 @@ class PlateletSegmentationModel(pl.LightningModule):
                  statistics.mean(self.instance_f1), prog_bar=False)
         self.log("val/instance_recall",
                  statistics.mean(self.instance_recall), prog_bar=False)
+        self.log("val/instance_dice",
+                 statistics.mean(self.instance_dice), prog_bar=False)
         self.log("val/ccdice",
                  self.cc_dice.cc_aggregate().mean().item(), on_epoch=True)
         self.instance_f1 = []
+        self.instance_recall = []
+        self.instance_dice = []
         self.log("val/dice", mean_dice, prog_bar=True)
         self.dice.reset()
 
@@ -422,6 +430,7 @@ class PlateletSegmentationModel(pl.LightningModule):
     def on_test_start(self):
         self.recall.reset()
         self.precision.reset()
+        self.cc_dice.reset()
         self.quartile_recalls = {
             "q0": [],
             "q1": [],
@@ -433,7 +442,6 @@ class PlateletSegmentationModel(pl.LightningModule):
 
     def test_step(self, batch, batch_idx):
         images, labels = batch["image"], batch["label"]
-
         outputs = self.forward(images)
         preds = self.post_trans(outputs)
 
@@ -445,6 +453,22 @@ class PlateletSegmentationModel(pl.LightningModule):
         labels = labels.cpu().numpy().squeeze()
 
         self.aggregator.evaluate(preds, labels, batch_idx)
+        if preds.ndim == 2:
+            preds_np = preds[None, ...]
+            labels_np = labels[None, ...]
+
+        B, C = 1, 2
+        D, H, W = preds_np.shape
+
+        y_hat = torch.zeros((B, C, D, H, W), dtype=torch.float32)
+        y = torch.zeros((B, C, D, H, W), dtype=torch.float32)
+
+        y_hat[0, 1] = torch.from_numpy(preds_np)
+        y[0, 1] = torch.from_numpy(labels_np)
+
+        y_hat[0, 0] = 1 - y_hat[0, 1]
+        y[0, 0] = 1 - y[0, 1]
+        self.cc_dice(y_pred=y_hat, y=y)
         gt_quartiles = split_gt_by_volume(labels, self.volume_quartiles)
         for i, gt_q in enumerate(gt_quartiles):
             if np.sum(gt_q) == 0:
@@ -452,6 +476,13 @@ class PlateletSegmentationModel(pl.LightningModule):
             self.quartile_recalls[f"q{i}"].append(self.evaluator.evaluate(
                 preds, gt_q, log_times=False, verbose=False)['instance'].rec)
         if True:
+            save_dir = os.path.join(self.logger.log_dir, "test_visuals")
+            os.makedirs(f"{save_dir}/preds", exist_ok=True)
+            os.makedirs(f"{save_dir}/labels", exist_ok=True)
+            Image.fromarray(np.uint8(preds * 255)).save(f"{save_dir}/preds/{batch_idx}.png")
+            Image.fromarray(np.uint8(labels * 255)
+                            ).save(f"{save_dir}/labels/{batch_idx}.png")
+
             # Compute masks
             tp = (preds == 1) & (labels == 1)
             fp = (preds == 1) & (labels == 0)
@@ -463,20 +494,22 @@ class PlateletSegmentationModel(pl.LightningModule):
             overlay[fp] = [1, 0, 0]
             overlay[fn] = [0, 0, 1]
 
-            # Plot
-            plt.figure(figsize=(6, 6))
-            plt.imshow(image, cmap="gray")
-            plt.imshow(overlay, alpha=0.5)
-            plt.axis("off")
-            plt.title("Green=TP | Red=FP | Blue=FN")
+            if image.max() > 1:
+                image_norm = image / 255.0
+            else:
+                image_norm = image.copy()
+            if image_norm.ndim == 2:
+                image_rgb = np.stack([image_norm]*3, axis=-1)
+            else:
+                image_rgb = image_norm
 
-            # Save
-            save_dir = os.path.join(self.logger.log_dir, "test_visuals")
-            os.makedirs(save_dir, exist_ok=True)
-            save_path = os.path.join(save_dir, f"{batch_idx}.png")
+            alpha = 0.5
+            blended = (1 - alpha) * image_rgb + alpha * overlay
+            blended_uint8 = np.uint8(np.clip(blended * 255, 0, 255))
 
-            plt.savefig(save_path, bbox_inches="tight", pad_inches=0)
-            plt.close()
+            save_path = os.path.join(save_dir, f"overlay_{batch_idx}.png")
+
+            Image.fromarray(blended_uint8).save(save_path)
 
     def on_test_epoch_end(self):
         precision = self.precision.compute()
@@ -499,6 +532,7 @@ class PlateletSegmentationModel(pl.LightningModule):
             "test/global/dice":      summary['global_bin_dsc'].avg,
             "test/global/precision": precision,
             "test/global/recall":    recall,
+            "test/cc/dice":    self.cc_dice.cc_aggregate().mean().item(),
             "test/instance/dice":      summary['sq_dsc'].avg,
             "test/instance/tp":        summary['tp'].avg,
             "test/instance/fp":        summary['fp'].avg,
