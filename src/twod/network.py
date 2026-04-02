@@ -343,15 +343,16 @@ class PlateletSegmentationModel(pl.LightningModule):
         mean_dice = self.dice.aggregate(reduction='mean').item()
         self.log("val/instance_f1",
                  statistics.mean(self.instance_f1), prog_bar=False)
+        self.instance_f1 = []
         self.log("val/instance_recall",
                  statistics.mean(self.instance_recall), prog_bar=False)
+        self.instance_recall = []
         self.log("val/instance_dice",
                  statistics.mean(self.instance_dice), prog_bar=False)
+        self.instance_dice = []
         self.log("val/ccdice",
                  self.cc_dice.cc_aggregate().mean().item(), on_epoch=True)
-        self.instance_f1 = []
-        self.instance_recall = []
-        self.instance_dice = []
+        self.cc_dice.reset()
         self.log("val/dice", mean_dice, prog_bar=True)
         self.dice.reset()
 
