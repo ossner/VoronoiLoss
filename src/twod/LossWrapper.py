@@ -38,16 +38,16 @@ class WeightedLossWrapper(torch.nn.Module):
 
 
 class WeightedDice(torch.nn.Module):
-    def __init__(self, eps: float = 1e-6):
+    def __init__(self, weighted = False, eps: float = 1e-6):
         super().__init__()
         self.eps = eps
+        self.weighted = weighted
 
     def forward(
         self,
         y_pred: torch.Tensor,  # logits (B,1,H,W)
         batch: torch.Tensor,
         mask_map: torch.Tensor = None,
-        weighted=False
     ) -> torch.Tensor:
 
         probs = torch.sigmoid(y_pred)
@@ -63,7 +63,7 @@ class WeightedDice(torch.nn.Module):
             mask = (mask_map == r_id).float()
             m_probs = probs * mask
             m_y = y * mask
-            mask = weight_map * mask if weighted else mask
+            mask = weight_map * mask if self.weighted else mask
             intersection = torch.sum(mask * m_probs * m_y)
             denominator = torch.sum(mask * (m_probs**2 + m_y**2))
 
@@ -74,23 +74,23 @@ class WeightedDice(torch.nn.Module):
 
 
 class WeightedBCE(torch.nn.Module):
-    def __init__(self, lambda_reg: float = 1.0):
+    def __init__(self, lambda_reg: float = 1.0, RCE = False, weighted = False):
         super().__init__()
         self.lambda_reg = lambda_reg
+        self.RCE = RCE
+        self.weighted = weighted
 
     def forward(
         self,
         y_pred: torch.Tensor,  # logits (B,1,H,W)
         batch: dict,
         mask_map: torch.Tensor = None,
-        weighted=False,
-        RCE=False,
     ) -> torch.Tensor:
         y = batch['label']
         weight_map = batch['weight_map']
         bce_map = F.binary_cross_entropy_with_logits(
             y_pred, y, reduction="none")
-        bce_map = bce_map * weight_map if weighted else bce_map
+        bce_map = bce_map * weight_map if self.weighted else bce_map
         if mask_map is None:
             mask_map = torch.ones_like(y)
 
@@ -101,7 +101,7 @@ class WeightedBCE(torch.nn.Module):
         for r_id in region_ids:
             mask = (mask_map == r_id)
             region_bce = bce_map[mask].mean()
-            if RCE:
+            if self.RCE:
                 p_hat_region = probs[mask].mean()
                 y_prop_region = y[mask].float().mean()
                 l1_penalty = torch.abs(y_prop_region - p_hat_region)
@@ -115,30 +115,30 @@ class WeightedBCE(torch.nn.Module):
 class CCDiceCE(torch.nn.Module):
     def __init__(self):
         super().__init__()
-        self.bce = WeightedBCE()
-        self.dice = WeightedDice()
+        self.bce = WeightedBCE(weighted=True)
+        self.dice = WeightedDice(weighted=True)
 
     def forward(
         self,
         y_pred: torch.Tensor,  # logits (B,1,H,W)
         batch: torch.Tensor,
     ) -> torch.Tensor:
-        return self.bce(y_pred, batch, batch['voronoi'], weighted=True) + self.dice(y_pred, batch, batch['voronoi'], weighted=True)
+        return self.bce(y_pred, batch, batch['voronoi']) + self.dice(y_pred, batch, batch['voronoi'])
 
 
 class CCTversky(torch.nn.Module):
-    def __init__(self, alpha: float = 0.3, beta: float = 0.7, eps: float = 1e-6):
+    def __init__(self, alpha: float = 0.3, beta: float = 0.7, eps: float = 1e-6, weighted=False):
         super().__init__()
         self.alpha = alpha
         self.beta = beta
         self.eps = eps
+        self.weighted = weighted
 
     def forward(
         self,
         y_pred: torch.Tensor,  # logits (B,1,H,W)
         batch: torch.Tensor,
         mask_map: torch.Tensor = None,
-        weighted=False
     ) -> torch.Tensor:
         probs = torch.sigmoid(y_pred)
         y = batch['label']
@@ -154,7 +154,7 @@ class CCTversky(torch.nn.Module):
             m_probs = probs * mask
             m_y = y * mask
 
-            w = weight_map * mask if weighted else mask
+            w = weight_map * mask if self.weighted else mask
 
             TP = torch.sum(w * m_probs * m_y)
             FP = torch.sum(w * m_probs * (1.0 - m_y))
