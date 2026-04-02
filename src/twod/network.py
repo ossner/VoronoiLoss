@@ -90,7 +90,7 @@ class PlateletSegmentationModel(pl.LightningModule):
         self.test_instance_f1_scores = []
         self.data_dir = data_dir
         self.save_hyperparameters(
-            "lr", "batch_size", 'loss_dict', 'weight_map')
+            "lr", "batch_size", 'loss_dict', 'weight_map', 'seed', 'task')
 
     def forward(self, x):
         return self.model(x)
