@@ -1,3 +1,4 @@
+import torch
 import os
 from glob import glob
 import numpy as np
@@ -197,3 +198,18 @@ def create_random_patch_dataset(data_files, cropKeys, base_transforms, train_tra
         samples_per_image=num_patches_per_image,
         transform=Compose(train_transforms)
     )
+
+
+def to_serializable(x):
+    if isinstance(x, torch.Tensor):
+        return x.detach().cpu().item()
+    elif hasattr(x, "item"):  # catches MetaTensor + numpy scalars
+        try:
+            return x.item()
+        except Exception:
+            pass
+    elif isinstance(x, dict):
+        return {k: to_serializable(v) for k, v in x.items()}
+    elif isinstance(x, (list, tuple)):
+        return [to_serializable(v) for v in x]
+    return x

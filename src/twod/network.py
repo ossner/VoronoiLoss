@@ -24,12 +24,13 @@ from monai.transforms import (
 )
 import os
 import numpy as np
+import json
 from tqdm import tqdm
 from VoronoiTransform import ComputeVoronoiMapsd
 from monai.data import decollate_batch, CacheDataset, DataLoader, list_data_collate, Dataset, PatchDataset
 from monai.utils import set_determinism
 from monai.optimizers import WarmupCosineSchedule, LinearLR
-from util import get_data_dicts, _get_random_cmap, split_gt_by_volume, get_data_dicts_3d, create_random_patch_dataset
+from util import get_data_dicts, _get_random_cmap, split_gt_by_volume, get_data_dicts_3d, create_random_patch_dataset, to_serializable
 from sklearn.metrics import fbeta_score
 import matplotlib
 import matplotlib.pyplot as plt
@@ -142,7 +143,7 @@ class PlateletSegmentationModel(pl.LightningModule):
             ScaleIntensityd(['image']),
             EnsureTyped(keys=SPATIAL_KEYS),
         ]
-        
+
         if self.data_dir.endswith('/platelet'):
             assert self.task in [
                 "ag", 'cv'], f"Task {self.task} and dataset {self.data_dir} do not match"
@@ -304,7 +305,7 @@ class PlateletSegmentationModel(pl.LightningModule):
         self.log("val/recall", self.recall, on_epoch=True)
         self.f2(preds, batch["label"])
         self.log("val/f2", self.f2, on_epoch=True)
-        
+
         preds_np = preds.detach().cpu().numpy().squeeze()
         labels_np = batch['label'].detach().cpu().numpy().squeeze()
         if self.current_epoch > 10:  # Panoptica instance wise needs a while before it can be applied due to instability early
@@ -447,6 +448,7 @@ class PlateletSegmentationModel(pl.LightningModule):
 
         self.recall(preds, labels)
         self.precision(preds, labels)
+        self.f2(preds, labels)
 
         image = images.cpu().numpy().squeeze()
         preds = preds.cpu().numpy().squeeze()
@@ -479,7 +481,8 @@ class PlateletSegmentationModel(pl.LightningModule):
             save_dir = os.path.join(self.logger.log_dir, "test_visuals")
             os.makedirs(f"{save_dir}/preds", exist_ok=True)
             os.makedirs(f"{save_dir}/labels", exist_ok=True)
-            Image.fromarray(np.uint8(preds * 255)).save(f"{save_dir}/preds/{batch_idx}.png")
+            Image.fromarray(np.uint8(preds * 255)
+                            ).save(f"{save_dir}/preds/{batch_idx}.png")
             Image.fromarray(np.uint8(labels * 255)
                             ).save(f"{save_dir}/labels/{batch_idx}.png")
 
@@ -513,6 +516,7 @@ class PlateletSegmentationModel(pl.LightningModule):
 
     def on_test_epoch_end(self):
         precision = self.precision.compute()
+        f2 = self.f2.compute()
         recall = self.recall.compute()
 
         statistics_obj = Panoptica_Statistic.from_file(
@@ -532,6 +536,7 @@ class PlateletSegmentationModel(pl.LightningModule):
             "test/global/dice":      summary['global_bin_dsc'].avg,
             "test/global/precision": precision,
             "test/global/recall":    recall,
+            "test/global/F2":    f2,
             "test/cc/dice":    self.cc_dice.cc_aggregate().mean().item(),
             "test/instance/dice":      summary['sq_dsc'].avg,
             "test/instance/tp":        summary['tp'].avg,
@@ -547,6 +552,10 @@ class PlateletSegmentationModel(pl.LightningModule):
             "test/instance/assd":      summary['sq_assd'].avg,
             "test/instance/cedi":      summary['sq_cedi'].avg,
         }
+        metrics_to_log = to_serializable(metrics_to_log)
+
+        with open(f"{self.logger.log_dir}/test_results.json", "w") as fp:
+            json.dump(metrics_to_log, fp, indent=2)
         self.log_dict(metrics_to_log)
 
         print(f"\nTest Results for {self.task}_{self.hparams.weight_map}:")
