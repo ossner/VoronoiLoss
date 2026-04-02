@@ -1,7 +1,9 @@
+import torch.nn as nn
 import kornia.contrib as kornia_contrib
 import torch
 from typing import Sequence, Tuple
 import torch.nn.functional as F
+
 
 class WeightedLossWrapper(torch.nn.Module):
     def __init__(self, loss_dict: Sequence[Tuple[str, torch.nn.Module, float]]):
@@ -72,34 +74,41 @@ class WeightedDice(torch.nn.Module):
 
 
 class WeightedBCE(torch.nn.Module):
-    def __init__(self):
+    def __init__(self, lambda_reg: float = 1.0):
         super().__init__()
+        self.lambda_reg = lambda_reg
 
     def forward(
         self,
         y_pred: torch.Tensor,  # logits (B,1,H,W)
-        batch: torch.Tensor,
+        batch: dict,
         mask_map: torch.Tensor = None,
-        weighted=False
+        weighted=False,
+        RCE=False,
     ) -> torch.Tensor:
         y = batch['label']
         weight_map = batch['weight_map']
-
         bce_map = F.binary_cross_entropy_with_logits(
-            y_pred, y, reduction="none")  # (B,1,H,W)
+            y_pred, y, reduction="none")
         bce_map = bce_map * weight_map if weighted else bce_map
-
         if mask_map is None:
-            return bce_map.mean()
+            mask_map = torch.ones_like(y)
 
         region_ids = torch.unique(mask_map)
         region_losses = []
 
+        probs = torch.sigmoid(y_pred)
         for r_id in region_ids:
             mask = (mask_map == r_id)
-            region_loss = bce_map[mask].mean()
+            region_bce = bce_map[mask].mean()
+            if RCE:
+                p_hat_region = probs[mask].mean()
+                y_prop_region = y[mask].float().mean()
+                l1_penalty = torch.abs(y_prop_region - p_hat_region)
+                region_loss = region_bce + (self.lambda_reg * l1_penalty)
+            else:
+                region_loss = region_bce
             region_losses.append(region_loss)
-
         return torch.stack(region_losses).mean()
 
 
