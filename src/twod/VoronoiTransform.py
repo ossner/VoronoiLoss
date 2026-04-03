@@ -26,22 +26,6 @@ def voronoi_map_from_binary_mask(mask: np.ndarray, min_size=14):
     if num_cc == 0:
         return np.zeros_like(cc_labels), cc_labels
     
-    # --- filter small components as segmentation errors---
-    component_sizes = np.bincount(cc_labels.ravel())
-    remove_ids = np.where(component_sizes < min_size)[0]
-    remove_ids = remove_ids[remove_ids != 0]  # keep background
-
-    filtered_mask = mask.copy()
-    for rid in remove_ids:
-        filtered_mask[cc_labels == rid] = 0
-
-    # relabel after filtering
-    cc_labels, num_cc = label(filtered_mask > 0, connector)
-
-    if num_cc == 0:
-        return np.zeros_like(cc_labels), cc_labels
-
-    # Compute Voronoi assignment for *all* pixels
     # distance_transform_edt assigns each pixel to nearest foreground voxel
     _, indices = distance_transform_edt(
         cc_labels == 0, return_indices=True
