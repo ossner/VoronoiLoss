@@ -97,7 +97,7 @@ def run_train(args):
                 )
 
                 model = PlateletSegmentationModel(
-                    data_dir=f'data/organelles/{args.dataset}',
+                    data_dir=f'data/organelles_clean/{args.dataset}',
                     loss_dict=build_loss_dict(losses),
                     weight_map=w_map,
                     batch_size=args.batch_size,
@@ -170,8 +170,7 @@ def main():
 
     parser.add_argument('--log_dir', type=str, default='src/twod/logs')
 
-    parser.add_argument('--losses', nargs='+',
-                        default=['111', '113'], help="Loss config relative weights (Dice:CE:CCDiceCE)")
+    parser.add_argument('--losses', nargs='+', help="Loss config relative weights (Dice:CE:CCDiceCE)")
 
     args = parser.parse_args()
 
