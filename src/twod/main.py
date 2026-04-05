@@ -23,12 +23,12 @@ def get_callbacks(monitor_metric="val/dice", mode="max", patience=25):
             mode="max",
             save_top_k=1
         ),
-        ModelCheckpoint(
-            filename="best_ccdice",
-            monitor="val/ccdice",
-            mode="max",
-            save_top_k=1
-        ),
+        #ModelCheckpoint(
+        #    filename="best_ccdice",
+        #    monitor="val/ccdice",
+        #    mode="max",
+        #    save_top_k=1
+        #),
         ModelCheckpoint(
             filename="final",
             save_top_k=1,
@@ -86,18 +86,29 @@ def run_train(args):
 
                 trainer = pl.Trainer(
                     max_epochs=args.epochs,
-                    deterministic=True,
+                    #deterministic=True,
+                    deterministic="warn_only",
                     accelerator="gpu",
                     devices=1,
                     precision="32", 
                     detect_anomaly=True,
                     logger=logger,
                     callbacks=get_callbacks(),
-                    log_every_n_steps=10
+                    log_every_n_steps=1
                 )
 
-                model = PlateletSegmentationModel(
-                    data_dir=f'data/organelles_clean/{args.dataset}',
+                # model = PlateletSegmentationModel(
+                #     data_dir=f'data/organelles_clean/{args.dataset}',
+                #     loss_dict=build_loss_dict(losses),
+                #     weight_map=w_map,
+                #     batch_size=args.batch_size,
+                #     lr=args.lr,
+                #     seed=args.seed,
+                #     task=task,
+                # )
+
+                model = BrainSegmentationModel(
+                    data_dir=f'data/brain/{args.dataset}',
                     loss_dict=build_loss_dict(losses),
                     weight_map=w_map,
                     batch_size=args.batch_size,
@@ -105,16 +116,6 @@ def run_train(args):
                     seed=args.seed,
                     task=task,
                 )
-
-                #model = BrainSegmentationModel(
-                #    data_dir=f'data/brain/{args.dataset}',
-                #    loss_dict=build_loss_dict(losses),
-                #    weight_map=w_map,
-                #    batch_size=args.batch_size,
-                #    lr=args.lr,
-                #    seed=args.seed,
-                #    task=task,
-                #)
 
                 trainer.fit(model)
 
@@ -165,7 +166,7 @@ def main():
 
     parser.add_argument('--batch_size', type=int, default=8)
     parser.add_argument('--lr', type=float, default=0.001)
-    parser.add_argument('--epochs', type=int, default=-1)
+    parser.add_argument('--epochs', type=int, default=300)
     parser.add_argument('--seed', type=int, default=42)
 
     parser.add_argument('--log_dir', type=str, default='src/twod/logs')
