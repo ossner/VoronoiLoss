@@ -23,11 +23,12 @@ class WeightedLossWrapper(torch.nn.Module):
 
     def forward(self, y_pred: torch.Tensor, batch: torch.Tensor) -> torch.Tensor:
         total = torch.zeros((), device=y_pred.device, dtype=y_pred.dtype)
-        probs = torch.sigmoid(y_pred)
-        pred_binary = (probs > 0.5).float()
-        pred_instances = kornia_contrib.connected_components(
-            pred_binary, num_iterations=150)
-        batch['pred_instances'] = pred_instances
+        # Optional: For some experiments, one can calculate the connected components of predictions and use them as instances
+        # probs = torch.sigmoid(y_pred)
+        # pred_binary = (probs > 0.5).float()
+        # pred_instances = kornia_contrib.connected_components(
+        #     pred_binary, num_iterations=150)
+        # batch['pred_instances'] = pred_instances
         for name, module in self.losses.items():
             weight = self.weights[name]
             if weight == 0:
@@ -74,7 +75,7 @@ class WeightedDice(torch.nn.Module):
 
 
 class WeightedBCE(torch.nn.Module):
-    def __init__(self, lambda_reg: float = 1.0, RCE = False, weighted = False):
+    def __init__(self, lambda_reg: float = 1.0, RCE = True, weighted = False):
         super().__init__()
         self.lambda_reg = lambda_reg
         self.RCE = RCE
