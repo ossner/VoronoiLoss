@@ -13,8 +13,14 @@ from monai.transforms import (
     RandFlipd,
     NormalizeIntensityd,
     RandRotate90d,
+    ScaleIntensityRanged,
     ScaleIntensityd,
+    ClipIntensityPercentilesd,
     EnsureTyped,
+    Orientationd,
+    Spacingd,
+    CropForegroundd,
+    ConcatItemsd,
     RandZoomd,
     RandGaussianNoised,
     RandGaussianSmoothd,
@@ -24,11 +30,13 @@ from monai.transforms import (
 )
 import os
 import numpy as np
+import nibabel as nib
 import json
 from tqdm import tqdm
 from VoronoiTransform import ComputeVoronoiMapsd
 from monai.data import decollate_batch, CacheDataset, DataLoader, list_data_collate, Dataset, PatchDataset
 from monai.utils import set_determinism
+from monai.networks.layers import Norm
 from monai.optimizers import WarmupCosineSchedule, LinearLR
 from util import get_data_dicts, _get_random_cmap, split_gt_by_volume, get_data_dicts_3d, create_random_patch_dataset, to_serializable
 from sklearn.metrics import fbeta_score
@@ -571,97 +579,43 @@ class PlateletSegmentationModel(pl.LightningModule):
 class BrainSegmentationModel(pl.LightningModule):
     def __init__(self, data_dir, loss_dict, weight_map='none', lr=1e-3, batch_size=8, seed=0, task='sbm'):
         super().__init__()
-        # 2D UNet: 1 input channel (grayscale), 1 output channel (binary)
         self.model = UNet(
             spatial_dims=3,
             in_channels=1,
-            out_channels=1,
+            out_channels=2,
             channels=(16, 32, 64, 128, 256),
             strides=(2, 2, 2, 2),
             num_res_units=2,
+            norm=Norm.BATCH,
         )
-        self.loss_function = DiceCELoss(sigmoid=True, squared_pred=True)
-        self.weight_map = weight_map
+        self.loss_function = DiceCELoss(softmax=True, to_onehot_y=True, include_background=False)
         self.dice = DiceMetric(
-            include_background=False,
-            reduction="mean",
+            include_background=False,reduction="mean",get_not_nans=False
         )
-        self.f1 = BinaryF1Score()
-        self.recall = BinaryRecall()
-        self.precision = BinaryPrecision()
-        self.post_trans = Compose([
-            Activations(sigmoid=True),
-            AsDiscrete(threshold=0.5)
-        ])
+        self.post_pred = Compose([AsDiscrete(argmax=True, to_onehot=2)])
+        self.post_label = Compose([AsDiscrete(to_onehot=2)])
 
-        self.evaluator = Panoptica_Evaluator.load_from_config(
-            "src/twod/eval/panoptica_config.yaml")
-        self.instance_f1 = []
         self.lr = lr
         self.batch_size = batch_size
         self.task = task
-        self.best_val_dice = 0.0
-        self.best_val_epoch = 0
-        self.validation_step_outputs = []
-        self.validation_vis_samples = []
-        self.test_instance_f1_scores = []
-        self.seed = seed
         self.data_dir = data_dir
         self.save_hyperparameters(
-            "lr", "batch_size", 'loss_dict', 'weight_map')
+            "lr", "batch_size", 'seed', 'task')
 
     def forward(self, x):
         return self.model(x)
 
     def prepare_data(self):
-        set_determinism(seed=self.seed)
-
-        train_files = get_data_dicts_3d(self.data_dir, "train", samples=3)
+        train_files = get_data_dicts_3d(self.data_dir, "train")
         val_files = get_data_dicts_3d(self.data_dir, "val")
         test_files = get_data_dicts_3d(self.data_dir, "test")
-        SPATIAL_KEYS = [
-            "image", "label", "voronoi", "weight_map", "instances"
-        ]
-        MODES = [
-            "bilinear",  # image
-            "nearest",   # label
-            "nearest",   # voronoi
-            "bilinear",  # weight_map
-            "nearest",   # instances
-        ]
-
-        train_transforms = [
-            RandFlipd(
-                keys=SPATIAL_KEYS, prob=0.5, spatial_axis=0),
-            RandFlipd(keys=SPATIAL_KEYS, prob=0.5, spatial_axis=1),
-            RandRotate90d(keys=SPATIAL_KEYS, prob=0.5, max_k=3),
-            RandZoomd(
-                keys=SPATIAL_KEYS,
-                min_zoom=0.9,
-                max_zoom=1.1,
-                prob=0.3,
-                mode=MODES,
-            ),
-            # RandGaussianSmoothd(keys=["image"], prob=0.3),
-            # RandGaussianNoised(keys=["image"], std=0.25, prob=0.3),
-            # RandScaleIntensityd(keys=["image"], factors=0.25, prob=0.3),
-            # RandShiftIntensityd(keys=["image"], offsets=0.25, prob=0.3),
-            EnsureTyped(keys=SPATIAL_KEYS),
-        ]
-
         base_transforms = [
             LoadImaged(keys=['image', 'label']),
             EnsureChannelFirstd(keys=["image", "label"]),
             DivisiblePadd(keys=["image", "label"], k=16),
-            Lambdad(keys=["label"], func=lambda x: (x > 0).astype(x.dtype)),
-            ComputeVoronoiMapsd(keys=["label"]),
-            EnsureChannelFirstd(
-                keys=["voronoi", "instances"], channel_dim="no_channel"),
-            ComputeWeightMapsd(
-                keys=["label"], concept=self.weight_map, mountain_sigma_sc=2, island_sigma_sc=5),
-            ScaleIntensityd(['image']),
+            Lambdad(keys=["label"], func=lambda x: (x == 1).astype(x.dtype)),
             NormalizeIntensityd(keys=["image"]),
-            EnsureTyped(keys=SPATIAL_KEYS),
+            EnsureTyped(keys=['image', 'label']),
         ]
         if self.data_dir.endswith('/sbm'):
             assert self.task in [
@@ -669,7 +623,37 @@ class BrainSegmentationModel(pl.LightningModule):
             print('Creating SBM datasets from volumes...')
             self.roi_size = (128, 128, 96)
             self.train_ds = create_random_patch_dataset(
-                train_files, SPATIAL_KEYS, base_transforms, train_transforms, roi_size=self.roi_size, num_patches_per_image=18, cache_rate=0.5)
+                train_files, ['image', 'label'], base_transforms, [], roi_size=self.roi_size, num_patches_per_image=5, cache_rate=0.5)
+            self.val_ds = Dataset(
+                data=train_files,
+                transform=Compose(base_transforms),
+            )
+            self.test_ds = Dataset(
+                data=test_files,
+                transform=Compose(base_transforms),
+            )
+        elif self.data_dir.endswith('/panc'):
+            assert self.task in [
+                'panc'], f"Task {self.task} and dataset {self.data_dir} do not match"
+            print('Creating MSD datasets from volumes...')
+            self.roi_size = (256, 256, 64)
+            self.train_ds = create_random_patch_dataset(
+                train_files, ['image', 'label'], base_transforms, [], roi_size=self.roi_size, num_patches_per_image=2, cache_rate=0.5)
+            self.val_ds = Dataset(
+                data=val_files,
+                transform=Compose(base_transforms),
+            )
+            self.test_ds = Dataset(
+                data=test_files,
+                transform=Compose(base_transforms),
+            )
+        elif self.data_dir.endswith('/wmh'):
+            assert self.task in [
+                'wmh'], f"Task {self.task} and dataset {self.data_dir} do not match"
+            print('Creating WMH datasets from volumes...')
+            self.roi_size = (64, 64, 48)
+            self.train_ds = create_random_patch_dataset(
+                train_files, ['image', 'label'], base_transforms, [], roi_size=self.roi_size, num_patches_per_image=16, cache_rate=1)
             self.val_ds = Dataset(
                 data=val_files,
                 transform=Compose(base_transforms),
@@ -686,7 +670,7 @@ class BrainSegmentationModel(pl.LightningModule):
             self.train_ds, batch_size=self.batch_size, num_workers=8, collate_fn=list_data_collate)
 
     def val_dataloader(self):
-        return DataLoader(self.val_ds, batch_size=1, num_workers=8)
+        return DataLoader(self.val_ds, batch_size=1, num_workers=8, collate_fn=list_data_collate)
 
     def test_dataloader(self):
         return DataLoader(self.test_ds, batch_size=1, num_workers=4)
@@ -697,155 +681,53 @@ class BrainSegmentationModel(pl.LightningModule):
             lr=self.lr,
         )
 
-        # scheduler = WarmupCosineSchedule(
-        #    optimizer,
-        #    t_total=self.trainer.max_epochs,
-        #    warmup_steps=5
-        # )
-        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-            optimizer, mode="max", factor=0.5, patience=15)
+        scheduler = WarmupCosineSchedule(
+            optimizer,
+            t_total=self.trainer.max_epochs,
+            warmup_steps=int(self.trainer.max_epochs * 0.05)
+        )
 
         return {
             "optimizer": optimizer,
             "lr_scheduler": {
                 "scheduler": scheduler,
-                "monitor": "val/dice",
                 "interval": "epoch",
                 "frequency": 1,
             },
         }
 
-    def on_fit_start(self):
-        total_params = sum(p.numel() for p in self.parameters())
-        trainable_params = sum(p.numel()
-                               for p in self.parameters() if p.requires_grad)
-
-        tb = self.logger.experiment
-        tb.add_scalar("model/total_params", total_params, 0)
-        tb.add_scalar("model/trainable_params", trainable_params, 0)
-
     def training_step(self, batch, batch_idx):
-        images = batch["image"]
+        images, labels = batch["image"], batch["label"]
         outputs = self.forward(images)
+        loss = self.loss_function(outputs, labels)
 
-        loss = self.loss_function(outputs, batch['label'])
-
-        preds_list = [self.post_trans(i) for i in decollate_batch(outputs)]
-        labels_list = decollate_batch(batch["label"])
-        self.dice(y_pred=preds_list, y=labels_list)
         self.log("train/loss", loss, on_epoch=True,
                  on_step=False, prog_bar=True)
-        self.log("train/dice", self.dice.aggregate().item(),
-                 on_step=False, on_epoch=True)
         self.log("train/lr", self.optimizers(
         ).param_groups[0]["lr"], on_step=False, on_epoch=True)
         return loss
 
-    def validation_step(self, batch, batch_idx):
-        images = batch["image"]
-        outputs = self(images)
-        val_loss = self.loss_function(outputs, batch['label'])
+    def on_before_optimizer_step(self, optimizer):
+        total_grad_norm = grad_norm(self, norm_type=2)
+        self.log_dict(total_grad_norm)
 
-        preds = self.post_trans(outputs)
-        self.dice(y_pred=preds, y=batch["label"])
+    def validation_step(self, batch, batch_idx):
+        images, labels = batch["image"], batch["label"]
+        outputs = self(images)
+        val_loss = self.loss_function(outputs, labels)
+         
+        outputs = [self.post_pred(i) for i in decollate_batch(outputs)]
+        labels = [self.post_label(i) for i in decollate_batch(labels)]
+        self.dice(y_pred=outputs, y=labels)
         self.log("val/loss", val_loss, on_epoch=True,
                  on_step=False, batch_size=images.shape[0])
-        self.f1(preds, batch["label"])
-        self.log("val/f1", self.f1, on_epoch=True)
-        if self.current_epoch > 20:  # Panoptica instance wise needs a while before it can be applied due to instability early
-            self.instance_f1.append(self.evaluator.evaluate(preds.detach().cpu().numpy().squeeze(
-            ), batch['label'].detach().cpu().numpy().squeeze(), log_times=False, verbose=False)['instance'].rq)
-        else:
-            self.instance_f1.append(0.5)
-        self.precision(preds, batch["label"])
-        self.log("val/precision", self.precision, on_epoch=True)
-        self.recall(preds, batch["label"])
-        self.log("val/recall", self.recall, on_epoch=True)
-
-        if self.current_epoch % 10 == 0 and len(self.validation_vis_samples) < 4:
-            self.validation_vis_samples.append((batch, outputs))
-
         return val_loss
 
     def on_validation_epoch_end(self):
-        mean_dice = self.dice.aggregate().item()
-        self.log("val/instance_f1",
-                 statistics.mean(self.instance_f1), prog_bar=False)
-        self.instance_f1 = []
-        self.log("val/dice", mean_dice, prog_bar=True)
+        self.log("val/dice", self.dice.aggregate().item(), prog_bar=True)
         self.dice.reset()
 
-        if mean_dice > self.best_val_dice:
-            self.best_val_dice = mean_dice
-            self.best_val_epoch = self.current_epoch
-        if self.validation_vis_samples:
-            self._visualize_val_samples(self.validation_vis_samples)
-            self.validation_vis_samples.clear()
-
-    def _visualize_val_samples(self, samples):
-        # Ensure we don't try to plot more than we have in the batch
-        n_rows = len(samples)
-        n_cols = 3
-        fig, ax = plt.subplots(n_rows, n_cols, figsize=(12, 4 * n_rows))
-
-        # If n_rows is 1, ax is not a 2D array, so we reshape it
-        if n_rows == 1:
-            ax = np.expand_dims(ax, axis=0)
-
-        for i in range(len(samples)):
-            batch, outputs = samples[i]
-            # 1. Prepare Tensors (Moving to CPU and stripping channel dim)
-            img = batch['image'].detach().cpu().numpy().squeeze()[:, :, 30]
-            gt_label = batch['label'].detach().cpu().numpy().squeeze()[
-                :, :, 30]
-            gt_voronoi = batch['voronoi'].detach().cpu().numpy().squeeze()[
-                :, :, 30]
-            weight_map = batch['weight_map'].detach(
-            ).cpu().numpy().squeeze()[:, :, 30]
-            pred_mask = (outputs.detach().cpu().numpy().squeeze()
-                         > 0.5).astype(np.float32)[:, :, 30]
-
-            # --- Column 1: GT Labels + Voronoi ---
-            ax[i, 0].imshow(img, cmap="gray")
-            ax[i, 0].imshow(gt_label, alpha=0.4, cmap="Blues")
-            ax[i, 0].imshow(gt_voronoi, alpha=0.4, cmap=_get_random_cmap(
-                gt_voronoi.max()), interpolation='nearest')
-            ax[i, 0].set_title(
-                f"GT")
-            ax[i, 0].axis('off')
-
-            # --- Column 2: Pred Mask ---
-            tp = (pred_mask == 1) & (gt_label == 1)
-            fp = (pred_mask == 1) & (gt_label == 0)
-            fn = (pred_mask == 0) & (gt_label == 1)
-            overlay = np.zeros((pred_mask.shape[0], pred_mask.shape[1], 3))
-
-            overlay[tp] = [0, 1, 0]
-            overlay[fp] = [1, 0, 0]
-            overlay[fn] = [0, 0, 1]
-            ax[i, 1].imshow(img, cmap="gray")
-            ax[i, 1].imshow(overlay, alpha=0.5)
-            ax[i, 1].set_title(
-                f"Green=TP | Red=FP | Blue=FN")
-            ax[i, 1].axis('off')
-
-            # --- Column 3: Weight Map ---
-            im3 = ax[i, 2].imshow(weight_map, cmap="viridis")
-            ax[i, 2].set_title(f"Weight Map: {self.weight_map}")
-            plt.colorbar(im3, ax=ax[i, 2], fraction=0.046, pad=0.04)
-            ax[i, 2].axis('off')
-
-        plt.tight_layout()
-        self.logger.experiment.add_figure("val/samples", fig, self.global_step)
-        plt.close(fig)
-
     def on_fit_end(self):
-        print(
-            f"Training completed. Best Dice Score: {self.best_val_dice:.4f} at Epoch: {self.best_val_epoch}")
         self.logger.log_hyperparams(
             params=dict(self.hparams),
-            metrics={
-                "best_val_dice": self.best_val_dice,
-                "best_val_epoch": self.best_val_epoch,
-            },
         )
