@@ -293,8 +293,6 @@ class PlateletSegmentationModel(pl.LightningModule):
         self.dice(y_pred=preds_list, y=labels_list)
         self.log("train/loss", loss, on_epoch=True,
                  on_step=False, prog_bar=True)
-        self.log("train/dice", self.dice.aggregate(reduction='mean').item(),
-                 on_step=False, on_epoch=True)
         self.log("train/lr", self.optimizers(
         ).param_groups[0]["lr"], on_step=False, on_epoch=True)
         return loss
@@ -609,13 +607,39 @@ class BrainSegmentationModel(pl.LightningModule):
         train_files = get_data_dicts_3d(self.data_dir, "train")
         val_files = get_data_dicts_3d(self.data_dir, "val")
         test_files = get_data_dicts_3d(self.data_dir, "test")
+        SPATIAL_KEYS = [
+            "image", "label"
+        ]
+        MODES = [
+            "bilinear",  # image
+            "nearest",   # label
+        ]
+        train_transforms = [
+            RandFlipd(
+                keys=SPATIAL_KEYS, prob=0.5, spatial_axis=0),
+            RandFlipd(keys=SPATIAL_KEYS, prob=0.5, spatial_axis=1),
+            RandRotate90d(keys=SPATIAL_KEYS, prob=0.5, max_k=3),
+            RandZoomd(
+                keys=SPATIAL_KEYS,
+                min_zoom=0.9,
+                max_zoom=1.1,
+                prob=0.3,
+                mode=MODES,
+            ),
+            RandGaussianSmoothd(keys=["image"], prob=0.3),
+            RandGaussianNoised(keys=["image"], std=0.25, prob=0.3),
+            RandScaleIntensityd(keys=["image"], factors=0.25, prob=0.3),
+            RandShiftIntensityd(keys=["image"], offsets=0.25, prob=0.3),
+            EnsureTyped(keys=SPATIAL_KEYS),
+        ]
+        
         base_transforms = [
-            LoadImaged(keys=['image', 'label']),
-            EnsureChannelFirstd(keys=["image", "label"]),
-            DivisiblePadd(keys=["image", "label"], k=16),
+            LoadImaged(keys=SPATIAL_KEYS),
+            EnsureChannelFirstd(keys=SPATIAL_KEYS),
+            DivisiblePadd(keys=SPATIAL_KEYS, k=16),
             Lambdad(keys=["label"], func=lambda x: (x == 1).astype(x.dtype)),
             NormalizeIntensityd(keys=["image"]),
-            EnsureTyped(keys=['image', 'label']),
+            EnsureTyped(keys=SPATIAL_KEYS),
         ]
         if self.data_dir.endswith('/sbm'):
             assert self.task in [
@@ -623,9 +647,9 @@ class BrainSegmentationModel(pl.LightningModule):
             print('Creating SBM datasets from volumes...')
             self.roi_size = (128, 128, 96)
             self.train_ds = create_random_patch_dataset(
-                train_files, ['image', 'label'], base_transforms, [], roi_size=self.roi_size, num_patches_per_image=5, cache_rate=0.5)
+                train_files, SPATIAL_KEYS, base_transforms, train_transforms, roi_size=self.roi_size, num_patches_per_image=5, cache_rate=0.5)
             self.val_ds = Dataset(
-                data=train_files,
+                data=val_files,
                 transform=Compose(base_transforms),
             )
             self.test_ds = Dataset(
