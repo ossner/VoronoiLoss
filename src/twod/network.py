@@ -351,7 +351,6 @@ class PlateletSegmentationModel(pl.LightningModule):
         return val_loss
 
     def on_validation_epoch_end(self):
-        mean_dice = self.dice.aggregate(reduction='mean').item()
         self.log("val/instance_f1",
                  statistics.mean(self.instance_f1), prog_bar=False)
         self.instance_f1 = []
@@ -364,15 +363,9 @@ class PlateletSegmentationModel(pl.LightningModule):
         self.log("val/ccdice",
                  self.cc_dice.cc_aggregate().mean().item(), on_epoch=True)
         self.cc_dice.reset()
-        self.log("val/dice", mean_dice, prog_bar=True)
+        self.log(
+            "val/dice", self.dice.aggregate(reduction='mean').item(), prog_bar=True)
         self.dice.reset()
-
-        if mean_dice > self.best_val_dice:
-            self.best_val_dice = mean_dice
-            self.best_val_epoch = self.current_epoch
-        if self.validation_vis_samples:
-            self._visualize_val_samples(self.validation_vis_samples)
-            self.validation_vis_samples.clear()
 
     def _visualize_val_samples(self, samples):
         # Ensure we don't try to plot more than we have in the batch
