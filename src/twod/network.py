@@ -249,39 +249,6 @@ class PlateletSegmentationModel(pl.LightningModule):
         tb.add_scalar("model/total_params", total_params, 0)
         tb.add_scalar("model/trainable_params", trainable_params, 0)
 
-        # self._visualize_augmentations()
-
-    def _visualize_augmentations(self, num_samples=4):
-        """Log multiple augmented versions of the same samples to visualize augmentations"""
-        fig, ax = plt.subplots(3, num_samples, figsize=(num_samples * 3, 10))
-        original_sample = self.train_ds.data[0]
-        for i in range(num_samples):
-            transformed = self.train_ds.transform(original_sample)
-
-            img = transformed["image"][0].detach().cpu()
-            mask = transformed["label"][0].detach().cpu()
-            weight = transformed['weight_map'][0].detach().cpu()
-
-            ax[0, i].imshow(img, cmap="gray")
-            ax[0, i].set_title(f"Aug {i+1}")
-            ax[0, i].axis("off")
-
-            ax[1, i].imshow(img, cmap="gray")
-            ax[1, i].imshow(mask, cmap="jet", alpha=0.4)
-            ax[1, i].set_title("Label Align")
-            ax[1, i].axis("off")
-
-            ax[2, i].imshow(weight, cmap="viridis")
-            ax[2, i].set_title("Weight Map")
-            ax[2, i].axis("off")
-
-        plt.tight_layout()
-        if self.logger and hasattr(self.logger, "experiment"):
-            self.logger.experiment.add_figure(
-                "train/augmentation_samples", fig, self.global_step)
-        print(
-            f"✓ Logged a sample augmentation to TensorBoard")
-
     def training_step(self, batch, batch_idx):
         images = batch["image"]
         outputs = self.forward(images)
