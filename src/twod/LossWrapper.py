@@ -75,10 +75,9 @@ class WeightedDice(torch.nn.Module):
 
 
 class WeightedBCE(torch.nn.Module):
-    def __init__(self, lambda_reg: float = 1.0, RCE = True, weighted = False):
+    def __init__(self, lambda_reg: float = 1.0, weighted = False):
         super().__init__()
         self.lambda_reg = lambda_reg
-        self.RCE = RCE
         self.weighted = weighted
 
     def forward(
@@ -98,17 +97,10 @@ class WeightedBCE(torch.nn.Module):
         region_ids = torch.unique(mask_map)
         region_losses = []
 
-        probs = torch.sigmoid(y_pred)
         for r_id in region_ids:
             mask = (mask_map == r_id)
             region_bce = bce_map[mask].mean()
-            if self.RCE:
-                p_hat_region = probs[mask].mean()
-                y_prop_region = y[mask].float().mean()
-                l1_penalty = torch.abs(y_prop_region - p_hat_region)
-                region_loss = region_bce + (self.lambda_reg * l1_penalty)
-            else:
-                region_loss = region_bce
+            region_loss = region_bce
             region_losses.append(region_loss)
         return torch.stack(region_losses).mean()
 
