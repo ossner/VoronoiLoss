@@ -573,18 +573,16 @@ class BrainSegmentationModel(pl.LightningModule):
         self.model = UNet(
             spatial_dims=3,
             in_channels=1,
-            out_channels=2,
-            channels=(16, 32, 64, 128, 256),
+            out_channels=1,
+            channels=(32, 64, 128, 256, 512),
             strides=(2, 2, 2, 2),
             num_res_units=2,
             norm=Norm.BATCH,
         )
-        self.loss_function = DiceCELoss(softmax=True, to_onehot_y=True, include_background=False)
-        self.dice = DiceMetric(
-            include_background=False,reduction="mean",get_not_nans=False
-        )
-        self.post_pred = Compose([AsDiscrete(argmax=True, to_onehot=2)])
-        self.post_label = Compose([AsDiscrete(to_onehot=2)])
+        self.loss_function = DiceCELoss(sigmoid=True, to_onehot_y=False, include_background=True)
+        self.dice = DiceMetric(include_background=True, reduction="mean", get_not_nans=False)
+        self.post_pred = Compose([Activations(sigmoid=True), AsDiscrete(threshold=0.5)])
+        self.post_label = Compose([AsDiscrete(threshold=0.5)])
 
         self.lr = lr
         self.batch_size = batch_size
@@ -640,22 +638,7 @@ class BrainSegmentationModel(pl.LightningModule):
             print('Creating SBM datasets from volumes...')
             self.roi_size = (128, 128, 96)
             self.train_ds = create_random_patch_dataset(
-                train_files, SPATIAL_KEYS, base_transforms, train_transforms, roi_size=self.roi_size, num_patches_per_image=5, cache_rate=0.5)
-            self.val_ds = Dataset(
-                data=val_files,
-                transform=Compose(base_transforms),
-            )
-            self.test_ds = Dataset(
-                data=test_files,
-                transform=Compose(base_transforms),
-            )
-        elif self.data_dir.endswith('/panc'):
-            assert self.task in [
-                'panc'], f"Task {self.task} and dataset {self.data_dir} do not match"
-            print('Creating MSD datasets from volumes...')
-            self.roi_size = (256, 256, 64)
-            self.train_ds = create_random_patch_dataset(
-                train_files, ['image', 'label'], base_transforms, [], roi_size=self.roi_size, num_patches_per_image=2, cache_rate=0.5)
+                train_files, SPATIAL_KEYS, base_transforms, train_transforms, roi_size=self.roi_size, num_patches_per_image=8, cache_rate=0.5)
             self.val_ds = Dataset(
                 data=val_files,
                 transform=Compose(base_transforms),
