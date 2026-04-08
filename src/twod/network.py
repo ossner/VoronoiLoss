@@ -579,11 +579,11 @@ class BrainSegmentationModel(pl.LightningModule):
             num_res_units=2,
             norm=Norm.BATCH,
         )
-        self.loss_function = DiceCELoss(sigmoid=True, to_onehot_y=False, include_background=True)
+        self.loss_function = WeightedLossWrapper(loss_dict=loss_dict)
         self.dice = DiceMetric(include_background=True, reduction="mean", get_not_nans=False)
         self.post_pred = Compose([Activations(sigmoid=True), AsDiscrete(threshold=0.5)])
         self.post_label = Compose([AsDiscrete(threshold=0.5)])
-
+        self.weight_map = weight_map
         self.lr = lr
         self.batch_size = batch_size
         self.task = task
@@ -629,6 +629,11 @@ class BrainSegmentationModel(pl.LightningModule):
             EnsureChannelFirstd(keys=SPATIAL_KEYS),
             DivisiblePadd(keys=SPATIAL_KEYS, k=16),
             Lambdad(keys=["label"], func=lambda x: (x == 1).astype(x.dtype)),
+            ComputeVoronoiMapsd(keys=["label"]),
+            EnsureChannelFirstd(
+                keys=["voronoi", "instances"], channel_dim="no_channel"),
+            ComputeWeightMapsd(
+                keys=["label"], concept=self.weight_map, mountain_sigma_sc=2, island_sigma_sc=5),
             NormalizeIntensityd(keys=["image"]),
             EnsureTyped(keys=SPATIAL_KEYS),
         ]
@@ -653,7 +658,7 @@ class BrainSegmentationModel(pl.LightningModule):
             print('Creating WMH datasets from volumes...')
             self.roi_size = (64, 64, 48)
             self.train_ds = create_random_patch_dataset(
-                train_files, ['image', 'label'], base_transforms, train_transforms, roi_size=self.roi_size, num_patches_per_image=16, cache_rate=1)
+                train_files, ['image', 'label'], base_transforms, train_transforms, roi_size=self.roi_size, num_patches_per_image=16, cache_rate=0.0)
             self.val_ds = Dataset(
                 data=val_files,
                 transform=Compose(base_transforms),
@@ -699,7 +704,7 @@ class BrainSegmentationModel(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         images, labels = batch["image"], batch["label"]
         outputs = self.forward(images)
-        loss = self.loss_function(outputs, labels)
+        loss = self.loss_function(outputs, batch)
 
         self.log("train/loss", loss, on_epoch=True,
                  on_step=False, prog_bar=True)
@@ -714,7 +719,7 @@ class BrainSegmentationModel(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         images, labels = batch["image"], batch["label"]
         outputs = self(images)
-        val_loss = self.loss_function(outputs, labels)
+        val_loss = self.loss_function(outputs, batch)
          
         outputs = [self.post_pred(i) for i in decollate_batch(outputs)]
         labels = [self.post_label(i) for i in decollate_batch(labels)]
