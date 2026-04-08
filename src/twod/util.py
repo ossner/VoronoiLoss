@@ -3,99 +3,101 @@ import os
 from glob import glob
 import numpy as np
 import scipy.ndimage as ndi
-from monai.transforms import MapTransform
 import numpy as np
 from matplotlib.colors import ListedColormap
 from scipy.ndimage import label
-from monai.data import CacheDataset, PatchDataset
+from monai.data import CacheDataset, PatchDataset, Dataset
 from monai.transforms import (
     Compose,
     RandCropByPosNegLabeld,
 )
 
-SEMANTIC_COLORS = np.array([
-    [0,   0,   0,   0],        # 0: Background
-    [0,  40, 255, 255],        # 1: Cell
-    [0, 212, 255, 255],        # 2: Mitochondrion
-    [124, 255, 121, 255],     # 3: Alpha granule
-    [255, 229,   0, 255],     # 4: Canalicular vessel
-    [255,  70,   0, 255],     # 5: Dense granule body
-    [127,   0,  127, 255],    # 6: Dense granule core
-], dtype=np.uint8)
+DATASET_CONFIGS = {
+    'platelet_ag': {
+        'roi': (288, 288),
+        'patches': 25,
+        'cache': 1.0,
+        'quartiles' : [460, 881, 1426.5]
+    },
+    'platelet_cv': {
+        'roi': (288, 288),
+        'patches': 25,
+        'cache': 1.0,
+        'quartiles' : [160, 271, 451.75]
+    },
+    'epfl_mit': {
+        'roi': (512, 512),
+        'patches': 16,
+        'cache': 0.25,
+        'quartiles' : [1393.25, 2265, 3737.5]
+    },
+    'sbm_mets': {
+        'roi': (96, 96, 64),
+        'patches': 20,
+        'cache': 0.1,
+        'quartiles' : [0,0,0]
+    },
+    'wmh_wmh': {
+        'roi': (64, 64, 48),
+        'patches': 16,
+        'cache': 0.1,
+        'quartiles' : [0,0,0]
+    }
+}
 
-class SemanticColorToBinaryd(MapTransform):
-    def __init__(self, keys, target_class):
-        super().__init__(keys)
-        self.semantic_colors = SEMANTIC_COLORS
-        self.target_color = SEMANTIC_COLORS[target_class]
+def configure_datasets(data_dir, task, train_files, val_files, test_files, base_transforms, train_transforms, spatial_keys=["image", "label", "voronoi", "weight_map", "instances"]):
+    config = next((cfg for path, cfg in DATASET_CONFIGS.items() if f"{data_dir}_{task}".endswith(path)), None)
+    print(f'Using config: {config}')
+    assert config is not None
+    train_ds = create_random_patch_dataset(
+                train_files, spatial_keys, base_transforms, train_transforms, config['roi'], config['patches'], cache_rate=config['cache'])
+    val_ds = CacheDataset(
+        data=val_files,
+        transform=Compose([*base_transforms,]),
+        cache_rate=config['cache']
+    )
+    test_ds = Dataset(
+        data=test_files,
+        transform=base_transforms,
+    )
+    print(config)
+    return train_ds, val_ds, test_ds, config['quartiles']
 
-    def __call__(self, data):
-        d = dict(data)
-        for key in self.keys:
-            label = d[key]  # shape: (4, H, W) or (H, W, 4)
 
-            # Ensure channel-last for comparison
-            if label.shape[0] == 4:
-                label = np.moveaxis(label, 0, -1)
-
-            # Exact color match
-            binary = np.all(label == self.target_color, axis=-1)
-
-            # Convert to (1, H, W) float32 tensor
-            d[key] = binary[None].astype(np.float32)
-
-        return d
-
-def get_data_dicts(data_dir, split, task='alpha granule', samples = -1, threed = False):
+def get_data_dicts(data_dir, split, twod, task, samples=-1):
     """
-    Docstring for get_data_dicts
-
-    :param data_dir: Parent directory that contains the splits. In this directory, this should contain train/ val/ (test/)
-    :param split: The split to generate the data_dir for. Should be one of [train, val, test]
-    """
-    # TODO: Ugly. Refactor
-    if samples == -1:
-        images = sorted(glob(os.path.join(data_dir, split, "images", "*.png")))
-        labels = sorted(
-            glob(os.path.join(data_dir, split, "labels", task, "*.png")))
-    else:
-        images = sorted(
-            glob(os.path.join(data_dir, split, "images", "*.png")))[:samples]
-        labels = sorted(
-            glob(os.path.join(data_dir, split, "labels", task, "*.png")))[:samples]
-
-    return [{"image": img, "label": lbl} for img, lbl in zip(images, labels)]
+    Consolidated loader for 2D or 3D medical imaging datasets.
     
-    
-def get_data_dicts_3d(data_dir, split, samples = -1):
+    :param data_dir: Root directory containing split folders (train/val/test).
+    :param split: The dataset split to load.
+    :param twod: Boolean, True for 2D PNG data, False for 3D NIfTI data.
+    :param task: Subfolder name for labels (used in 2D mode).
+    :param samples: Number of samples to return. -1 returns all.
     """
-    Docstring for get_data_dicts_3d
+    path_root = os.path.join(data_dir, split)
+    limit = samples if samples > 0 else None
 
-    :param data_dir: Parent directory that contains the splits. In this directory, this should contain train/ val/ (test/)
-    :param split: The split to generate the data_dir for. Should be one of [train, val, test]
-    """
-    if samples == -1:
-        subject_dirs = sorted(glob(os.path.join(data_dir, split, "images", "*")))
-        label_files = sorted(glob(os.path.join(data_dir, split, "labels", "*.nii.gz")))
-    else:
-        subject_dirs = sorted(glob(os.path.join(data_dir, split, "images", "*")))[:samples]
-        label_files = sorted(glob(os.path.join(data_dir, split, "labels", "*.nii.gz")))[:samples]
-
-    data_dicts = []
-
-    for subj_dir, lbl in zip(subject_dirs, label_files):
-        channel_files = sorted(glob(os.path.join(subj_dir, "*.nii.gz")))
+    if twod:
+        images = sorted(glob(os.path.join(path_root, "images", "*.png")))[:limit]
+        labels = sorted(glob(os.path.join(path_root, "labels", task, "*.png")))[:limit]
         
-        if not channel_files or not os.path.exists(lbl):
-            continue
+        return [{"image": img, "label": lbl} for img, lbl in zip(images, labels)]
+
+    else:
+        subj_dirs = sorted(glob(os.path.join(path_root, "images", "*")))[:limit]
+        lbl_files = sorted(glob(os.path.join(path_root, "labels", "*.nii.gz")))[:limit]
+
+        data_dicts = []
+        for subj_dir, lbl in zip(subj_dirs, lbl_files):
+            channels = sorted(glob(os.path.join(subj_dir, "*.nii.gz")))
             
-        data_dicts.append({
-            "image": channel_files,
-            "label": lbl
-        })
-
-    return data_dicts
-
+            if channels and os.path.exists(lbl):
+                data_dicts.append({
+                    "image": channels, 
+                    "label": lbl
+                })
+                
+        return data_dicts
 
 def instance_f1_score(pred, gt, iou_thresh=0.5):
     """
@@ -178,7 +180,6 @@ def create_random_patch_dataset(data_files, cropKeys, base_transforms, train_tra
         data=data_files,
         transform=Compose(base_transforms),
         cache_rate=cache_rate,
-        num_workers=4
     )
 
     patcher = RandCropByPosNegLabeld(
