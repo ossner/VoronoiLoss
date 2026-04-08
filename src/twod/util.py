@@ -3,10 +3,11 @@ import os
 from glob import glob
 import numpy as np
 import scipy.ndimage as ndi
-import numpy as np
+import nibabel as nib
 from matplotlib.colors import ListedColormap
 from scipy.ndimage import label
 from monai.data import CacheDataset, PatchDataset, Dataset
+from PIL import Image
 from monai.transforms import (
     Compose,
     RandCropByPosNegLabeld,
@@ -45,6 +46,34 @@ DATASET_CONFIGS = {
     }
 }
 
+def save_as_nifti(tensor, filename, is_multichannel=False):
+    data = tensor.detach().cpu().numpy()
+    
+    data = np.squeeze(data, axis=0)
+    
+    if is_multichannel:
+        data = np.transpose(data, (1, 2, 3, 0))
+    else:
+        data = np.squeeze(data, axis=0)
+
+    img = nib.Nifti1Image(data, affine=np.eye(4), dtype=data.dtype)
+    
+    nib.save(img, filename)
+    print(f"Saved {filename} with shape {data.shape}")
+
+
+def save_2d_as_png(tensor, base_name):
+    data = tensor.detach().cpu().numpy().squeeze(0)
+    def to_8bit(arr):
+        arr_min, arr_max = arr.min(), arr.max()
+        if arr_max - arr_min > 0:
+            return ((arr - arr_min) / (arr_max - arr_min) * 255).astype(np.uint8)
+        return np.zeros_like(arr, dtype=np.uint8)
+
+    if data.ndim == 3:
+        data = data.squeeze(0)
+    Image.fromarray(to_8bit(data)).save(f"{base_name}.png")
+
 def configure_datasets(data_dir, task, train_files, val_files, test_files, base_transforms, train_transforms, spatial_keys=["image", "label", "voronoi", "weight_map", "instances"]):
     config = next((cfg for path, cfg in DATASET_CONFIGS.items() if f"{data_dir}_{task}".endswith(path)), None)
     print(f'Using config: {config}')
@@ -60,7 +89,6 @@ def configure_datasets(data_dir, task, train_files, val_files, test_files, base_
         data=test_files,
         transform=base_transforms,
     )
-    print(config)
     return train_ds, val_ds, test_ds, config['quartiles']
 
 
