@@ -653,7 +653,7 @@ class BrainSegmentationModel(pl.LightningModule):
             print('Creating WMH datasets from volumes...')
             self.roi_size = (64, 64, 48)
             self.train_ds = create_random_patch_dataset(
-                train_files, ['image', 'label'], base_transforms, [], roi_size=self.roi_size, num_patches_per_image=16, cache_rate=1)
+                train_files, ['image', 'label'], base_transforms, train_transforms, roi_size=self.roi_size, num_patches_per_image=16, cache_rate=1)
             self.val_ds = Dataset(
                 data=val_files,
                 transform=Compose(base_transforms),
