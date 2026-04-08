@@ -34,11 +34,11 @@ import nibabel as nib
 import json
 from tqdm import tqdm
 from VoronoiTransform import ComputeVoronoiMapsd
-from monai.data import decollate_batch, CacheDataset, DataLoader, list_data_collate, Dataset
+from monai.data import decollate_batch, DataLoader, list_data_collate
 from monai.utils import set_determinism
 from monai.networks.layers import Norm
 from monai.optimizers import WarmupCosineSchedule
-from util import get_data_dicts, _get_random_cmap, split_gt_by_volume, create_random_patch_dataset, to_serializable, configure_datasets
+from util import get_data_dicts, _get_random_cmap, split_gt_by_volume, to_serializable, configure_datasets, save_as_nifti, save_2d_as_png
 import matplotlib
 import matplotlib.pyplot as plt
 import statistics
@@ -149,7 +149,7 @@ class InstanceSegmentationModel(pl.LightningModule):
         train_files = get_data_dicts(self.data_dir, "train", self.twod, self.task)
         val_files = get_data_dicts(self.data_dir, "val", self.twod, self.task)
         test_files = get_data_dicts(self.data_dir, "test", self.twod, self.task)
-        self.train_ds, self.val_ds, self.test_ds, self.volume_quartiles = configure_datasets(self.data_dir, self.task, train_files, val_files, test_files, base_transforms, train_transforms)
+        self.train_ds, self.val_ds, self.test_ds, self.volume_quartiles = configure_datasets(self.data_dir, self.task, train_files, val_files, test_files, base_transforms, train_transforms, SPATIAL_KEYS)
 
 
     def train_dataloader(self):
@@ -229,7 +229,7 @@ class InstanceSegmentationModel(pl.LightningModule):
 
         preds_np = preds.detach().cpu().numpy().squeeze()
         labels_np = batch['label'].detach().cpu().numpy().squeeze()
-        if self.current_epoch > 10:  # Panoptica instance wise needs a while before it can be applied due to instability early
+        if self.current_epoch > (self.trainer.max_epochs * 0.05):  # Panoptica instance wise needs a while before it can be applied due to instability early
             panoptica_metrics = self.evaluator.evaluate(
                 preds_np, labels_np, log_times=False, verbose=False)['instance']
             self.instance_f1.append(panoptica_metrics.rq)
@@ -255,7 +255,23 @@ class InstanceSegmentationModel(pl.LightningModule):
         y_hat[0, 0] = 1 - y_hat[0, 1]
         y[0, 0] = 1 - y[0, 1]
         self.cc_dice(y_pred=y_hat, y=y)
-
+        if batch_idx == 0:
+            os.makedirs(f"{self.logger.log_dir}/val_sample_0/", exist_ok=True)
+            if not self.twod:
+                if self.current_epoch == 0:
+                    save_as_nifti(images, f"{self.logger.log_dir}/val_sample_0/image.nii.gz", is_multichannel=True)
+                    save_as_nifti(batch["label"], f"{self.logger.log_dir}/val_sample_0/labels.nii.gz")
+                    save_as_nifti(batch["voronoi"], f"{self.logger.log_dir}/val_sample_0/voronoi.nii.gz")
+                    save_as_nifti(batch["weight_map"], f"{self.logger.log_dir}/val_sample_0/weight_map.nii.gz")
+                save_as_nifti(preds, f"{self.logger.log_dir}/val_sample_0/preds.nii.gz")
+            else:
+                if self.current_epoch == 0:
+                    save_2d_as_png(images, f"{self.logger.log_dir}/val_sample_0/image")
+                    save_2d_as_png(batch["label"], f"{self.logger.log_dir}/val_sample_0/labels")
+                    save_2d_as_png(batch["voronoi"], f"{self.logger.log_dir}/val_sample_0/voronoi")
+                    save_2d_as_png(batch["weight_map"], f"{self.logger.log_dir}/val_sample_0/weight_map")
+                save_2d_as_png(preds, f"{self.logger.log_dir}/val_sample_0/preds")
+                
         return val_loss
 
     def on_validation_epoch_end(self):
