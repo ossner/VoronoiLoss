@@ -6,7 +6,7 @@ from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 from monai.utils.enums import TraceKeys
 
 # Local imports
-from network import PlateletSegmentationModel, BrainSegmentationModel
+from network import InstanceSegmentationModel
 from LossWrapper import WeightedDice, WeightedBCE, CCDiceCE, CCTversky
 
 # Register safe globals for torch 2.0+ checkpoint loading
@@ -14,7 +14,7 @@ torch.serialization.add_safe_globals(
     [WeightedDice, WeightedBCE, CCDiceCE, TraceKeys, CCTversky])
 
 
-def get_callbacks(monitor_metric="val/dice", mode="max", patience=25):
+def get_callbacks():
     """Returns a list of standard callbacks."""
     return [
         ModelCheckpoint(
@@ -23,12 +23,12 @@ def get_callbacks(monitor_metric="val/dice", mode="max", patience=25):
             mode="max",
             save_top_k=1
         ),
-        #ModelCheckpoint(
-        #    filename="best_ccdice",
-        #    monitor="val/ccdice",
-        #    mode="max",
-        #    save_top_k=1
-        #),
+        ModelCheckpoint(
+            filename="best_ccdice",
+            monitor="val/ccdice",
+            mode="max",
+            save_top_k=1
+        ),
         ModelCheckpoint(
             filename="final",
             save_top_k=1,
@@ -36,11 +36,6 @@ def get_callbacks(monitor_metric="val/dice", mode="max", patience=25):
             every_n_epochs=1,
             save_on_train_epoch_end=True
         ),
-        #EarlyStopping(
-        #    monitor=monitor_metric,
-        #    mode=mode,
-        #    patience=patience
-        #)
     ]
     
 def build_loss_dict(config_str):
@@ -86,35 +81,24 @@ def run_train(args):
 
                 trainer = pl.Trainer(
                     max_epochs=args.epochs,
-                    #deterministic=True,
-                    deterministic="warn_only",
+                    deterministic=True,
                     accelerator="gpu",
                     devices=1,
                     precision="32", 
-                    detect_anomaly=True,
+                    #detect_anomaly=True, # expensive and slows down training, only turn on in case of suspected errors
                     logger=logger,
                     callbacks=get_callbacks(),
                     log_every_n_steps=1
                 )
 
-                # model = PlateletSegmentationModel(
-                #     data_dir=f'data/organelles_clean/{args.dataset}',
-                #     loss_dict=build_loss_dict(losses),
-                #     weight_map=w_map,
-                #     batch_size=args.batch_size,
-                #     lr=args.lr,
-                #     seed=args.seed,
-                #     task=task,
-                # )
-
-                model = BrainSegmentationModel(
-                    data_dir=f'data/brain/{args.dataset}',
+                model = InstanceSegmentationModel(
+                    data_dir=f'data/datasets/{args.dataset}',
                     loss_dict=build_loss_dict(losses),
+                    task=task,
                     weight_map=w_map,
                     batch_size=args.batch_size,
                     lr=args.lr,
                     seed=args.seed,
-                    task=task,
                 )
 
                 trainer.fit(model)
@@ -137,9 +121,9 @@ def run_eval(args):
                 )
 
                 try:
-                    model = PlateletSegmentationModel.load_from_checkpoint(
+                    model = InstanceSegmentationModel.load_from_checkpoint(
                         ckpt_path,
-                        data_dir=f'data/organelles/{args.dataset}',
+                        data_dir=f'data/datasets/{args.dataset}',
                         task=task,
                         weights_only=False
                     )
