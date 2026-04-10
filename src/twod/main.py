@@ -2,16 +2,16 @@ import argparse
 import torch
 import pytorch_lightning as pl
 from pytorch_lightning.loggers import TensorBoardLogger
-from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
+from pytorch_lightning.callbacks import ModelCheckpoint
 from monai.utils.enums import TraceKeys
 
 # Local imports
 from network import InstanceSegmentationModel
-from LossWrapper import WeightedDice, WeightedBCE, CCDiceCE, CCTversky
+from LossWrapper import WeightedDice, WeightedBCE, Tversky
 
 # Register safe globals for torch 2.0+ checkpoint loading
 torch.serialization.add_safe_globals(
-    [WeightedDice, WeightedBCE, CCDiceCE, TraceKeys, CCTversky])
+    [WeightedDice, WeightedBCE, Tversky, TraceKeys])
 
 
 def get_callbacks():
@@ -38,33 +38,41 @@ def get_callbacks():
         ),
     ]
     
-def build_loss_dict(config_str):
-    """
-    config_str: string of digits, e.g. "112", "110"
-    returns: list of (name, loss_fn, weight)
-    """
-
+def build_loss_dict(config_str: str):
     loss_registry = [
         ('Dice', WeightedDice()),
         ('CE', WeightedBCE()),
-        ('CCDiceCE', CCDiceCE()),
-        ("CCTversky", CCTversky()),
-        ]
-
-    if len(config_str) != len(loss_registry):
+        ('Tversky', Tversky()),
+    ]
+    
+    num_losses = len(loss_registry)
+    
+    if len(config_str) != 2 * num_losses:
         raise ValueError(
-            f"Expected config string of length {len(loss_registry)}, got {len(config_str)}"
+            f"Expected config string of length {2 * num_losses} "
+            f"(Global + Local), got {len(config_str)}"
         )
 
-    loss_dict = []
+    global_part = config_str[:num_losses]
+    local_part = config_str[num_losses:]
 
-    for digit, (name, loss_fn) in zip(config_str, loss_registry):
-        weight = int(digit)
-        if weight > 0:
-            loss_dict.append((name, loss_fn, weight))
+    def process_sub_config(sub_str):
+        modules = []
+        total_weight = 0
+        for digit, (name, loss_fn) in zip(sub_str, loss_registry):
+            weight = int(digit)
+            if weight > 0:
+                modules.append(loss_fn)
+                total_weight += weight
+        return modules, float(total_weight)
 
-    return loss_dict
+    global_tuple = process_sub_config(global_part)
+    local_tuple = process_sub_config(local_part)
 
+    if global_tuple[1] == 0 and local_tuple[1] == 0:
+        raise ValueError("Config string resulted in zero active losses.")
+
+    return global_tuple, local_tuple
 
 def run_train(args):
     """Iterates through tasks and weight maps for sequential training."""
@@ -93,7 +101,8 @@ def run_train(args):
 
                 model = InstanceSegmentationModel(
                     data_dir=f'data/datasets/{args.dataset}',
-                    loss_dict=build_loss_dict(losses),
+                    #loss_dict=(([WeightedBCE(), WeightedDice()], 1), ([Tversky(weighted=True)], 1)),
+                    loss_dict=(build_loss_dict(losses)),
                     task=task,
                     weight_map=w_map,
                     batch_size=args.batch_size,
