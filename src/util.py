@@ -15,40 +15,74 @@ from monai.transforms import (
 
 DATASET_CONFIGS = {
     'platelet_ag': {
+        'superset': 'platelet',
+        'task': 'ag',
+        'dimensions': 2,
+        'channels' : 1,
+        'batch_size': 16,
+        'epochs': 300,
         'roi': (288, 288),
         'patches': 25,
         'cache': 1.0,
-        'quartiles' : [460, 881, 1426.5]
+        'label': 255,
+        'quartiles' : [460, 881, 1426.5],
     },
     'platelet_cv': {
+        'superset': 'platelet',
+        'task': 'cv',
+        'dimensions': 2,
+        'channels' : 1,
+        'batch_size': 16,
+        'epochs': 300,
         'roi': (288, 288),
         'patches': 25,
         'cache': 1.0,
-        'quartiles' : [160, 271, 451.75]
+        'label': 255,
+        'quartiles' : [160, 271, 451.75],
     },
     'epfl_mit': {
+        'superset': 'epfl',
+        'task': 'mit',
+        'dimensions': 2,
+        'channels' : 1,
+        'batch_size': 16,
+        'epochs': 300,
         'roi': (512, 512),
         'patches': 16,
         'cache': 0.25,
-        'quartiles' : [1393.25, 2265, 3737.5]
+        'label': 255,
+        'quartiles' : [1393.25, 2265, 3737.5],
     },
     'sbm_mets': {
+        'superset': 'sbm',
+        'task': 'mets',
+        'dimensions': 3,
+        'channels' : 2,
+        'batch_size': 4,
+        'epochs': 500,
         'roi': (96, 96, 64),
         'patches': 20,
-        'cache': 0.1,
-        'quartiles' : [0,0,0]
+        'cache': 0.25,
+        'label': 1,
+        'quartiles' : [0,0,0],
     },
     'wmh_wmh': {
+        'superset': 'wmh',
+        'task': 'wmh',
+        'dimensions': 3,
+        'channels' : 2,
+        'batch_size': 4,
+        'epochs': 500,
         'roi': (64, 64, 48),
         'patches': 16,
-        'cache': 0.1,
-        'quartiles' : [0,0,0]
+        'cache': 0.25,
+        'label': 1,
+        'quartiles' : [0,0,0],
     }
 }
 
 def save_as_nifti(tensor, filename, is_multichannel=False):
     data = tensor.detach().cpu().numpy()
-    
     data = np.squeeze(data, axis=0)
     
     if is_multichannel:
@@ -59,7 +93,6 @@ def save_as_nifti(tensor, filename, is_multichannel=False):
     img = nib.Nifti1Image(data, affine=np.eye(4), dtype=data.dtype)
     
     nib.save(img, filename)
-    print(f"Saved {filename} with shape {data.shape}")
 
 
 def save_2d_as_png(tensor, base_name):
@@ -74,58 +107,75 @@ def save_2d_as_png(tensor, base_name):
         data = data.squeeze(0)
     Image.fromarray(to_8bit(data)).save(f"{base_name}.png")
 
-def configure_datasets(data_dir, task, train_files, val_files, test_files, base_transforms, train_transforms, spatial_keys=["image", "label", "voronoi", "weight_map", "instances"]):
-    config = next((cfg for path, cfg in DATASET_CONFIGS.items() if f"{data_dir}_{task}".endswith(path)), None)
-    print(f'Using config: {config}')
-    assert config is not None
+def configure_datasets(data_dir, dataset_config, train_files, val_files, test_files, base_transforms, train_transforms, spatial_keys=["image", "label", "voronoi", "weight_map", "instances"]):
+    assert dataset_config is not None
     train_ds = create_random_patch_dataset(
-                train_files, spatial_keys, base_transforms, train_transforms, config['roi'], config['patches'], cache_rate=config['cache'])
+                train_files, spatial_keys, base_transforms, train_transforms, dataset_config['roi'], dataset_config['patches'], cache_rate=dataset_config['cache'])
     val_ds = CacheDataset(
         data=val_files,
         transform=Compose([*base_transforms,]),
-        cache_rate=config['cache']
+        cache_rate=dataset_config['cache']
     )
     test_ds = Dataset(
         data=test_files,
         transform=base_transforms,
     )
-    return train_ds, val_ds, test_ds, config['quartiles']
+    return train_ds, val_ds, test_ds
 
 
-def get_data_dicts(data_dir, split, twod, task, samples=-1):
+def get_data_dicts(data_dir, split, dataset_config, samples=-1):
     """
-    Consolidated loader for 2D or 3D medical imaging datasets.
-    
-    :param data_dir: Root directory containing split folders (train/val/test).
-    :param split: The dataset split to load.
-    :param twod: Boolean, True for 2D PNG data, False for 3D NIfTI data.
-    :param task: Subfolder name for labels (used in 2D mode).
-    :param samples: Number of samples to return. -1 returns all.
+    General loader supporting:
+    - 2D (png) and 3D (nii.gz)
+    - multi-channel per case
+    - multiple tasks (but loads one task at a time)
+
+    Returns MONAI-style dict:
+    [{"image": [ch1, ch2, ...], "label": label_path}, ...]
     """
-    path_root = os.path.join(data_dir, split)
-    limit = samples if samples > 0 else None
 
-    if twod:
-        images = sorted(glob(os.path.join(path_root, "images", "*.png")))[:limit]
-        labels = sorted(glob(os.path.join(path_root, "labels", task, "*.png")))[:limit]
-        
-        return [{"image": img, "label": lbl} for img, lbl in zip(images, labels)]
+    superset = dataset_config["superset"]
+    task = dataset_config["task"]
 
-    else:
-        subj_dirs = sorted(glob(os.path.join(path_root, "images", "*")))[:limit]
-        lbl_files = sorted(glob(os.path.join(path_root, "labels", "*.nii.gz")))[:limit]
+    images_root = os.path.join(data_dir, superset, split, "images")
+    labels_root = os.path.join(data_dir, superset, split, "labels", task)
 
-        data_dicts = []
-        for subj_dir, lbl in zip(subj_dirs, lbl_files):
-            channels = sorted(glob(os.path.join(subj_dir, "*.nii.gz")))
-            
-            if channels and os.path.exists(lbl):
-                data_dicts.append({
-                    "image": channels, 
-                    "label": lbl
-                })
-                
-        return data_dicts
+    case_dirs = sorted([
+        d for d in glob(os.path.join(images_root, "*"))
+        if os.path.isdir(d)
+    ])
+
+    if samples > 0:
+        case_dirs = case_dirs[:samples]
+
+    data_dicts = []
+
+    for case_dir in case_dirs:
+        case_id = os.path.basename(case_dir)
+
+        channels = sorted(
+            glob(os.path.join(case_dir, "*.png")) +
+            glob(os.path.join(case_dir, "*.nii")) +
+            glob(os.path.join(case_dir, "*.nii.gz"))
+        )
+
+        if len(channels) == 0:
+            continue
+
+        label_candidates = (
+            glob(os.path.join(labels_root, case_id + ".*"))  # flexible extension
+        )
+
+        if len(label_candidates) == 0:
+            continue
+
+        label_path = label_candidates[0]
+
+        data_dicts.append({
+            "image": channels,
+            "label": label_path
+        })
+    return data_dicts
 
 def instance_f1_score(pred, gt, iou_thresh=0.5):
     """

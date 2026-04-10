@@ -8,6 +8,7 @@ from monai.utils.enums import TraceKeys
 # Local imports
 from network import InstanceSegmentationModel
 from LossWrapper import WeightedDice, WeightedBCE, Tversky
+from util import DATASET_CONFIGS
 
 # Register safe globals for torch 2.0+ checkpoint loading
 torch.serialization.add_safe_globals(
@@ -76,19 +77,20 @@ def build_loss_dict(config_str: str):
 
 def run_train(args):
     """Iterates through tasks and weight maps for sequential training."""
-    for task in args.tasks:
+    for dataset in args.datasets:
         for w_map in args.weight_maps:
             for losses in args.losses:
-                print(f"\nStarting Training | Task: {args.dataset}_{task} | Map: {w_map} | Loss config: {losses}")
-
+                dataset_config = DATASET_CONFIGS[dataset]
+                print(f"\nStarting Training | Task: {dataset} | Map: {w_map} | Loss config: {losses}")
+                print(f"Dataset config: {dataset_config}")
                 logger = TensorBoardLogger(
                     save_dir=args.log_dir,
-                    name=f"{losses}/{args.dataset}_{task}/{w_map}",
+                    name=f"{losses}/{dataset}/{w_map}",
                     default_hp_metric=False
                 )
 
                 trainer = pl.Trainer(
-                    max_epochs=args.epochs,
+                    max_epochs=dataset_config['epochs'],
                     deterministic=True,
                     accelerator="gpu",
                     devices=1,
@@ -100,12 +102,10 @@ def run_train(args):
                 )
 
                 model = InstanceSegmentationModel(
-                    data_dir=f'data/datasets/{args.dataset}',
-                    #loss_dict=(([WeightedBCE(), WeightedDice()], 1), ([Tversky(weighted=True)], 1)),
+                    data_dir=f'data/datasets',
+                    dataset_config = dataset_config,
                     loss_dict=(build_loss_dict(losses)),
-                    task=task,
                     weight_map=w_map,
-                    batch_size=args.batch_size,
                     lr=args.lr,
                     seed=args.seed,
                 )
@@ -152,19 +152,15 @@ def main():
     parser.add_argument('--mode', type=str,
                         choices=['train', 'eval'])
 
-    parser.add_argument('--dataset', type=str, default='platelet')
-    parser.add_argument('--tasks', nargs='+', default=['cv', 'ag'])
-    parser.add_argument('--weight_maps', nargs='+',
-                        default=['none', 'iw', 'v_region', 'v_size', 'v_mountains', 'v_islands'])
+    parser.add_argument('--datasets', nargs='+')
+    parser.add_argument('--weight_maps', nargs='+', default=['none'])
+    parser.add_argument('--losses', nargs='+', help="Loss config relative weights")
 
-    parser.add_argument('--batch_size', type=int, default=8)
     parser.add_argument('--lr', type=float, default=0.001)
-    parser.add_argument('--epochs', type=int, default=300)
     parser.add_argument('--seed', type=int, default=42)
 
-    parser.add_argument('--log_dir', type=str, default='src/twod/logs')
+    parser.add_argument('--log_dir', type=str, default='src/logs')
 
-    parser.add_argument('--losses', nargs='+', help="Loss config relative weights (Dice:CE:CCDiceCE)")
 
     args = parser.parse_args()
 

@@ -1,4 +1,3 @@
-from monai.losses import DiceCELoss
 import torch
 import pytorch_lightning as pl
 from monai.networks.nets import UNet
@@ -13,14 +12,7 @@ from monai.transforms import (
     RandFlipd,
     NormalizeIntensityd,
     RandRotate90d,
-    ScaleIntensityRanged,
-    ScaleIntensityd,
-    ClipIntensityPercentilesd,
     EnsureTyped,
-    Orientationd,
-    Spacingd,
-    CropForegroundd,
-    ConcatItemsd,
     RandZoomd,
     RandGaussianNoised,
     RandGaussianSmoothd,
@@ -30,17 +22,13 @@ from monai.transforms import (
 )
 import os
 import numpy as np
-import nibabel as nib
 import json
-from tqdm import tqdm
 from VoronoiTransform import ComputeVoronoiMapsd
 from monai.data import decollate_batch, DataLoader, list_data_collate
 from monai.utils import set_determinism
 from monai.networks.layers import Norm
 from monai.optimizers import WarmupCosineSchedule
-from util import get_data_dicts, _get_random_cmap, split_gt_by_volume, to_serializable, configure_datasets, save_as_nifti, save_2d_as_png
-import matplotlib
-import matplotlib.pyplot as plt
+from util import get_data_dicts, split_gt_by_volume, to_serializable, configure_datasets, save_as_nifti, save_2d_as_png
 import statistics
 from PIL import Image
 from LossWrapper import WeightedLossWrapper
@@ -49,18 +37,15 @@ from torchmetrics.classification import BinaryPrecision, BinaryRecall, BinaryFBe
 from panoptica import Panoptica_Evaluator, Panoptica_Aggregator, Panoptica_Statistic
 from WeightMapTransforms import ComputeWeightMapsd
 from CCMetrics import CCDiceMetric
-matplotlib.use("Agg")
 
 
 class InstanceSegmentationModel(pl.LightningModule):
-    def __init__(self, data_dir, loss_dict, task, weight_map='none', lr=1e-3, batch_size=8, seed=0):
+    def __init__(self, data_dir, dataset_config, loss_dict, weight_map, lr, seed):
         super().__init__()
-        assert task in ['ag', 'cv', 'mit', 'sbm', 'mets'], "Unknown task, please check the run config"
-        self.twod = task in ['ag', 'cv', 'mit']
         set_determinism(seed=seed)
         self.model = UNet(
-            spatial_dims=2 if self.twod else 3,
-            in_channels=4 if task == 'mets' else 1, # Only SBM dataset properly supports 4 channels without much fuss and re-alignment
+            spatial_dims=dataset_config['dimensions'],
+            in_channels=dataset_config['channels'],
             out_channels=1,
             channels=(32, 64, 128, 256, 512),
             strides=(2, 2, 2, 2),
@@ -86,16 +71,16 @@ class InstanceSegmentationModel(pl.LightningModule):
         ])
 
         self.evaluator = Panoptica_Evaluator.load_from_config(
-            "src/twod/eval/panoptica_config.yaml")
+            "src/eval/panoptica_config.yaml")
         self.instance_f1 = []
         self.instance_recall = []
         self.instance_dice = []
         self.lr = lr
-        self.batch_size = batch_size
-        self.task = task
+        self.batch_size = dataset_config['batch_size']
+        self.dataset_config = dataset_config
         self.data_dir = data_dir
         self.save_hyperparameters(
-            "lr", "batch_size", 'loss_dict', 'weight_map', 'seed', 'task')
+            'dataset_config', 'loss_dict', "lr", 'weight_map', 'seed')
 
     def forward(self, x):
         return self.model(x)
@@ -136,7 +121,7 @@ class InstanceSegmentationModel(pl.LightningModule):
             LoadImaged(keys=['image', 'label']),
             EnsureChannelFirstd(keys=["image", "label"]),
             DivisiblePadd(keys=["image", "label"], k=16),
-            Lambdad(keys=["label"], func=lambda x: ((x == 1) | (x == 255)).astype(x.dtype)),
+            Lambdad(keys=["label"], func=lambda x: (x == self.dataset_config['label']).astype(x.dtype)),
             ComputeVoronoiMapsd(keys=["label"]),
             EnsureChannelFirstd(
                 keys=["voronoi", "instances"], channel_dim="no_channel"),
@@ -146,11 +131,10 @@ class InstanceSegmentationModel(pl.LightningModule):
             EnsureTyped(keys=SPATIAL_KEYS),
         ]
         
-        train_files = get_data_dicts(self.data_dir, "train", self.twod, self.task)
-        val_files = get_data_dicts(self.data_dir, "val", self.twod, self.task)
-        test_files = get_data_dicts(self.data_dir, "test", self.twod, self.task)
-        self.train_ds, self.val_ds, self.test_ds, self.volume_quartiles = configure_datasets(self.data_dir, self.task, train_files, val_files, test_files, base_transforms, train_transforms, SPATIAL_KEYS)
-
+        train_files = get_data_dicts(self.data_dir, "train", self.dataset_config)
+        val_files = get_data_dicts(self.data_dir, "val", self.dataset_config)
+        test_files = get_data_dicts(self.data_dir, "test", self.dataset_config)
+        self.train_ds, self.val_ds, self.test_ds = configure_datasets(self.data_dir, self.dataset_config, train_files, val_files, test_files, base_transforms, train_transforms, SPATIAL_KEYS)
 
     def train_dataloader(self):
         return DataLoader(
@@ -257,7 +241,7 @@ class InstanceSegmentationModel(pl.LightningModule):
         self.cc_dice(y_pred=y_hat, y=y)
         if batch_idx == 0:
             os.makedirs(f"{self.logger.log_dir}/val_sample_0/", exist_ok=True)
-            if not self.twod:
+            if not self.dataset_config['dimensions'] == 2:
                 if self.current_epoch == 0:
                     save_as_nifti(images, f"{self.logger.log_dir}/val_sample_0/image.nii.gz", is_multichannel=True)
                     save_as_nifti(batch["label"], f"{self.logger.log_dir}/val_sample_0/labels.nii.gz")
