@@ -134,7 +134,7 @@ class InstanceSegmentationModel(pl.LightningModule):
         train_files = get_data_dicts(self.data_dir, "train", self.dataset_config)
         val_files = get_data_dicts(self.data_dir, "val", self.dataset_config)
         test_files = get_data_dicts(self.data_dir, "test", self.dataset_config)
-        self.train_ds, self.val_ds, self.test_ds = configure_datasets(self.data_dir, self.dataset_config, train_files, val_files, test_files, base_transforms, train_transforms, SPATIAL_KEYS)
+        self.train_ds, self.val_ds, self.test_ds = configure_datasets(self.dataset_config, train_files, val_files, test_files, base_transforms, train_transforms, SPATIAL_KEYS)
 
     def train_dataloader(self):
         return DataLoader(

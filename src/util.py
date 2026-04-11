@@ -107,7 +107,7 @@ def save_2d_as_png(tensor, base_name):
         data = data.squeeze(0)
     Image.fromarray(to_8bit(data)).save(f"{base_name}.png")
 
-def configure_datasets(data_dir, dataset_config, train_files, val_files, test_files, base_transforms, train_transforms, spatial_keys=["image", "label", "voronoi", "weight_map", "instances"]):
+def configure_datasets(dataset_config, train_files, val_files, test_files, base_transforms, train_transforms, spatial_keys=["image", "label", "voronoi", "weight_map", "instances"]):
     assert dataset_config is not None
     train_ds = create_random_patch_dataset(
                 train_files, spatial_keys, base_transforms, train_transforms, dataset_config['roi'], dataset_config['patches'], cache_rate=dataset_config['cache'])
