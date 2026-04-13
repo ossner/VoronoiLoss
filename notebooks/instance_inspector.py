@@ -121,16 +121,16 @@ def _(Image, collect_instance_metrics_from_mask, np, os, pd):
 
         return pd.DataFrame(instance_rows), pd.DataFrame(image_rows)
 
-    return
+    return (collect_instance_metrics,)
 
 
 @app.cell(hide_code=True)
 def _(mo):
     dataset_dropdown = mo.ui.dropdown(
         options={
-            "epfl/mit": ("data/organelles/epfl", "mit"),
-            "platelet/cv": ("data/organelles/platelet", "cv"),
-            "platelet/ag": ("data/organelles/platelet", "ag"),
+            "epfl/mit": ("data/datasets/epfl", "mit"),
+            "platelet/cv": ("data/datasets/platelet", "cv"),
+            "platelet/ag": ("data/datasets/platelet", "ag"),
         },
         value=("epfl/mit"),
         label="Select dataset",
@@ -144,14 +144,16 @@ def _(mo):
 
 
 @app.cell
-def _(dataset_dropdown, json, mo, np, pd):
+def _(collect_instance_metrics, dataset_dropdown, json, mo, np, pd):
     LABEL_DIR, TASK = dataset_dropdown.value
 
-    #inst_df, _ = collect_instance_metrics(LABEL_DIR, TASK)
-    #inst_df.insert(0, 'ID', range(0, len(inst_df)))
-    #inst_df.to_csv(f'{LABEL_DIR}_{TASK}_instances.csv', index=False)
+    try:
+        inst_df = pd.read_csv(f'{LABEL_DIR}_{TASK}_instances.csv')
+    except FileNotFoundError as e:
+        inst_df, _ = collect_instance_metrics(LABEL_DIR, TASK)
+        inst_df.insert(0, 'ID', range(0, len(inst_df)))
+        inst_df.to_csv(f'{LABEL_DIR}_{TASK}_instances.csv', index=False)
 
-    inst_df = pd.read_csv(f'{LABEL_DIR}_{TASK}_instances.csv')
     inst_df['coords'] = inst_df['coords'].apply(lambda x: np.array(json.loads(x)))
     get_inst, set_inst = mo.state(inst_df)
     get_flagged, set_flagged = mo.state(pd.DataFrame(columns=inst_df.columns))
@@ -204,7 +206,7 @@ def _(
 
     # Paths
     lbl_path = f"{LABEL_DIR}/{split}/labels/{TASK}/{fname}"
-    img_path = lbl_path.replace(f"/labels/{TASK}", "/images/")
+    img_path = lbl_path.replace(f"/labels/{TASK}/{fname}", f"/images/{fname.replace('.png', '')}/SEM.png")
     # Load images
     try:
         raw_img = np.array(Image.open(img_path))
@@ -258,24 +260,24 @@ def _(Image, LABEL_DIR, TASK, export_button, get_flagged, mo, np, os, shutil):
     flagged = flagged.groupby('filename')['coords'].apply(list).to_dict()
 
     SRC_DIR = LABEL_DIR
-    DST_DIR = SRC_DIR.replace('organelles', 'organelles_clean')
+    DST_DIR = F'{SRC_DIR}_clean'
 
     for _split in ['train', 'val', 'test']:
         img_src_dir = f'{SRC_DIR}/{_split}/images'
         lbl_src_dir = f'{SRC_DIR}/{_split}/labels/{TASK}'
-    
+
         img_dst_dir = f'{DST_DIR}/{_split}/images'
         lbl_dst_dir = f'{DST_DIR}/{_split}/labels/{TASK}'
     
-        os.makedirs(img_dst_dir, exist_ok=True)
-        os.makedirs(lbl_dst_dir, exist_ok=True)
+        os.makedirs(f'{lbl_dst_dir}/', exist_ok=True)
 
-        for file in os.listdir(img_src_dir):
-            img_src_path = f'{img_src_dir}/{file}'
-            lbl_src_path = f'{lbl_src_dir}/{file}'
-        
-            img_dst_path = f'{img_dst_dir}/{file}'
-            lbl_dst_path = f'{lbl_dst_dir}/{file}'
+        for case in os.listdir(img_src_dir):
+            os.makedirs(f'{img_dst_dir}/{case}', exist_ok=True)
+            img_src_path = f'{img_src_dir}/{case}/SEM.png'
+            lbl_src_path = f'{lbl_src_dir}/{case}.png'
+
+            img_dst_path = f'{img_dst_dir}/{case}/SEM.png'
+            lbl_dst_path = f'{lbl_dst_dir}/{case}.png'
 
             # --- Copy image directly ---
             shutil.copy2(img_src_path, img_dst_path)
@@ -284,8 +286,8 @@ def _(Image, LABEL_DIR, TASK, export_button, get_flagged, mo, np, os, shutil):
             _label = np.array(Image.open(lbl_src_path))
 
             # If file is flagged → mask coords
-            if file in flagged:
-                for coord_list in flagged[file]:
+            if f'{case}.png' in flagged:
+                for coord_list in flagged[f'{case}.png']:
                     for (_y, _x) in coord_list:   # note your coords are [y, x]
                         if 0 <= _y < _label.shape[0] and 0 <= _x < _label.shape[1]:
                             _label[_y, _x] = 0
