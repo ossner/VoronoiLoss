@@ -85,7 +85,8 @@
 })
 
 // Set citation style
-#set cite(style: "ieee")
+// ACM is standard for computing-related publications
+#set cite(style: "association-for-computing-machinery")
 
 // Table stroke
 #set table(stroke: 0.5pt + black)
@@ -143,6 +144,9 @@
 #include "chapters/1_Introduction.typ"
 #include "chapters/2_Related_Work.typ"
 #include "chapters/3_Methodology.typ"
+#include "chapters/4_Results.typ"
+#include "chapters/5_Discussion.typ"
+#include "chapters/6_Conclusion.typ"
 
 //#include "Chapter_RelatedWork.typ"
 
