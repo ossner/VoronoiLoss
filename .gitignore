@@ -210,3 +210,4 @@ data/
 .DS_store
 src/*/logs*
 *logs*
+*experimental_results*
