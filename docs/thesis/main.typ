@@ -1,8 +1,8 @@
 #import "@preview/exzellenz-tum-thesis:0.2.0": exzellenz-tum-thesis
 
-#import "utils.typ": inwriting, draft, todo
-#import "glossary.typ": glossary
-#import "@preview/glossarium:0.5.9": make-glossary, register-glossary, print-glossary, gls, glspl
+#import "utils.typ": draft, inwriting, todo
+#import "glossary.typ": entry-list
+#import "@preview/glossarium:0.5.9": *
 
 /** Introduction
 
@@ -15,9 +15,9 @@
 /** Drafting
 
   Set inwriting and draft inside utils.
-  
+
   The "draft" variable is used to show DRAFT in the header and the title. This should be true until the final version is handed-in.
-  
+
   The "inwriting" is used to change the appearance of the document for easier writing. Set to true for yourself but false for handing in a draft or so.
 
 **/
@@ -38,7 +38,9 @@
   title-en: "Addressing Volumetric Bias in Multi-Instance Semantic Segmentation Using Voronoi Tesselation",
   title-de: "Adressierung volumetrischer Befangenheit in Multi-Instanz-Semantischer Segmentierung durch Voronoi-Tessellation",
   abstract-text: [
-    #lorem(60)
+   TODO: Make this left-aligned instead of
+
+   #lorem(30)
   ],
   submission-date: datetime.today().display("[day].[month].[year]"),
   show-title-in-header: true,
@@ -76,9 +78,7 @@
 // Names for headings
 #set heading(supplement: it => {
   if (it.has("depth")) {
-    if it.depth == 1 [Chapter]
-    else if it.depth == 2 [Section]
-    else [Subsection]
+    if it.depth == 1 [Chapter] else if it.depth == 2 [Section] else [Subsection]
   } else {
     [ERROR, this should not happen]
   }
@@ -91,22 +91,13 @@
 // Table stroke
 #set table(stroke: 0.5pt + black)
 
-// show reference targets in brackets
-#show ref: it => {
-  let el = it.element
-  if el != none and el.func() == heading {
-
-    [#it (#el.body)]
-  } else [#it]
-}
-
 // color links and references
 #show ref: set text(fill: color.olive)
 #show link: set text(fill: blue)
 
 // style table-of-contents
 #show outline.entry.where(
-  level: 1
+  level: 1,
 ): it => {
   v(1em, weak: true)
   strong(it)
@@ -119,7 +110,7 @@
 
 // Make and register Glossary //
 #show: make-glossary
-#register-glossary(glossary)
+#register-glossary(entry-list)
 
 // ------ Content ------
 
@@ -130,7 +121,7 @@
     v(10mm)
   },
   indent: 2em,
-  depth: 3
+  depth: 3,
 )
 #pagebreak(weak: false)
 
@@ -156,12 +147,16 @@
 #counter(page).update(1)
 
 
-#include("chapters/A1_Appendix.typ")
+#include "chapters/A1_Appendix.typ"
 
 // List of Acronyms.
-#heading(numbering: none)[Glossary]
-#print-glossary(glossary)
 
+#heading(numbering: none)[Glossary]
+
+#print-glossary(
+  entry-list,
+  show-all: true,
+)
 // List of figures.
 #heading(numbering: none)[List of Figures]
 #outline(
@@ -173,8 +168,8 @@
 #heading(numbering: none)[List of Tables]
 #outline(
   title: none,
-  target: figure.where(kind: table)
-)  
+  target: figure.where(kind: table),
+)
 
 // --- Bibliography ---
 

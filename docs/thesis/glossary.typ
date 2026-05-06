@@ -1,53 +1,92 @@
-// this is an example. Check https://typst.app/universe/package/glossarium
-
-#let glossary = (
-  (
-    key: "tum",
-    short: "TUM",
-    long: "Technical University Munich",
-  ),
-  (
-    key: "lmu",
-    short: "LMU",
-    long: "Ludwig-Maximilians-Universität München",
-  ),
-  (
-    key: "ieee",
-    short: "IEEE",
-    long: "Institute of Electrical and Electronics Engineers",
-  ),
+#let entry-list = (
   (
     key: "miqa",
     short: "MIQA",
     long: "Medical Imaging Quality Assessment",
+    group: "Abbreviations",
+  ),
+  (
+    key: "em",
+    short: "EM",
+    long: "Electron Microscopy",
+    group: "Abbreviations",
+  ),
+  (
+    key: "ai",
+    short: "AI",
+    long: "Artificial Intelligence",
+    group: "Abbreviations",
+  ),
+  (
+    key: "cnn",
+    short: "CNN",
+    long: "Convolutional Neural Network",
+    group: "Abbreviations",
   ),
   (
     key: "tda",
     short: "TDA",
     long: "Topological Data Analysis",
+    group: "Abbreviations",
   ),
-  // Add a PLURAL form
   (
-    key: "potato",
-    short: "potato",
-    // "plural" will be used when "short" should be pluralized
-    plural: "potatoes",
+    key: "wmh",
+    short: "WMH",
+    long: "White Matter Hyperintensity",
+    group: "Abbreviations",
   ),
-  // Add a LONGPLURAL form
   (
-    key: "dm",
-    short: "DM",
-    long: "diagonal matrix",
-    // "longplural" will be used when "long" should be pluralized
-    longplural: "diagonal matrices",
-    description: "Probably some math stuff idk",
+    key: "assd",
+    short: "ASSD",
+    long: "Average Symmetric Surface Distance",
+    description: [An instance-wise metric that denotes the average distances of the prediction surface to the ground truth surface. Lower is considered better.],
+    group: "Metrics",
   ),
-  // Add a CUSTOM entry
   (
-    key: "c",
-    short: $c$,
-    description: "Speed of light in vacuum",
-    // The custom key will be ignored by the default print-glossary function
-    custom: (unit: $op("m s")^(-1)$),
+    key: "cedi",
+    short: "CEDI",
+    long: "Center Distance",
+    description: [An instance-wise metric that denotes the distance of the prediction centroid to the ground truth centroid. Lower is considered better.],
+    group: "Metrics",
+  ),
+  (
+    key: "fbeta",
+    short: [$F_beta$],
+    description: [A measure using a positive real factor $beta$ to calculate the weighted harmonic mean between precision and recall. Higher is considered better.],
+    group: "Metrics",
+  ),
+  (
+    key: "R",
+    short: $R$,
+    long: [${R_1, R_2, dots, R_n}$],
+    description: [The set of $n$ regions in an image, each of which contains exactly one seed instance],
+    group: "Mathematical Notations and Definitions",
+  ),
+  (
+    key: "L",
+    short: $"L": Omega mapsto {0,1}$,
+    description: [The binary label function that maps a pixel in the image domain to a binary value],
+    group: "Mathematical Notations and Definitions",
+  ),
+  (
+    key: "Omega",
+    short: $Omega$,
+    long: [{$x in ZZ^d$ | }],
+    description: [The discrete image space comprised of pixels $x$ with dimensionality $d$],
+    group: "Mathematical Notations and Definitions",
+  ),
+  (
+    key: "d",
+    short: $"d"$,
+    long: [$M times M mapsto RR$],
+    description: [A distance function $"d"$ operating on a given metric space $M$ returning a scalar distance value between two points],
+    group: "Mathematical Notations and Definitions",
+  ),
+  (
+    key: "I",
+    short: $I$,
+    long: [${I_1, I_2, dots, I_n}$],
+    description: [The set of instances in an image with $n$ connected components. The set of ground truth instances and predicted instances can be denoted with $I_("y")$ and $I_(hat(y))$ respectively.],
+    group: "Mathematical Notations and Definitions",
   ),
 )
