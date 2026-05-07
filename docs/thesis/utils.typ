@@ -12,3 +12,10 @@
 #let silentheading(level, body) = [
   #heading(outlined: false, level: level, numbering: none, bookmarked: true)[#body]
 ]
+
+#let class_colors = (
+  rgb(34, 197, 94),  // TP
+  rgb(59,130,246),  // FN
+  rgb(239,68,68),  // FP
+  rgb(248,250,252),  // TN
+)

@@ -18,6 +18,42 @@
     group: "Abbreviations",
   ),
   (
+    key: "tp",
+    short: "TP",
+    long: "true positive",
+    group: "Abbreviations",
+  ),
+  (
+    key: "fp",
+    short: "FP",
+    long: "false positive",
+    group: "Abbreviations",
+  ),
+  (
+    key: "fn",
+    short: "FN",
+    long: "false negative",
+    group: "Abbreviations",
+  ),
+  (
+    key: "tn",
+    short: "TN",
+    long: "true negative",
+    group: "Abbreviations",
+  ),
+  (
+    key: "mri",
+    short: "MRI",
+    long: "Magnetic Resonance Imaging",
+    group: "Abbreviations",
+  ),
+  (
+    key: "ce",
+    short: "CE",
+    long: "Cross Entropy",
+    group: "Abbreviations",
+  ),
+  (
     key: "cnn",
     short: "CNN",
     long: "Convolutional Neural Network",
@@ -27,6 +63,12 @@
     key: "tda",
     short: "TDA",
     long: "Topological Data Analysis",
+    group: "Abbreviations",
+  ),
+  (
+    key: "edt",
+    short: "EDT",
+    long: "Euclidean Distance Transform",
     group: "Abbreviations",
   ),
   (
@@ -71,7 +113,6 @@
   (
     key: "Omega",
     short: $Omega$,
-    long: [{$x in ZZ^d$ | }],
     description: [The discrete image space comprised of pixels $x$ with dimensionality $d$],
     group: "Mathematical Notations and Definitions",
   ),
