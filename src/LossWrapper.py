@@ -99,6 +99,64 @@ class WeightedBCE(torch.nn.Module):
             region_losses.append(region_loss)
         return torch.stack(region_losses).mean()
 
+
+class TopKLoss(torch.nn.Module):
+    def __init__(self, k: float = 0.1, weighted: bool = False):
+        """
+        Args:
+            k: The fraction of hardest pixels to keep (0.0 < k <= 1.0).
+            weighted: Whether to apply the weight_map from the batch.
+        """
+        super().__init__()
+        self.k = k
+        self.weighted = weighted
+
+    def forward(
+        self,
+        y_pred: torch.Tensor,  # Logits (B, 1, H, W)
+        batch: dict,
+        local: bool = False
+    ) -> torch.Tensor:
+        y = batch['label']
+
+        # 1. Compute pixel-wise BCE (no reduction yet)
+        bce_map = F.binary_cross_entropy_with_logits(
+            y_pred, y, reduction="none"
+        )
+
+        # 2. Apply Weight Map if enabled
+        if self.weighted:
+            weight_map = batch['weight_map']
+            bce_map = bce_map * weight_map
+
+        # 3. Determine segmentation regions
+        if not local:
+            mask_map = torch.ones_like(y)
+        else:
+            mask_map = batch['voronoi']
+
+        region_ids = torch.unique(mask_map)
+        region_losses = []
+
+        # 4. Apply TopK per region
+        for r_id in region_ids:
+            mask = (mask_map == r_id)
+            region_values = bce_map[mask]
+
+            # Calculate how many pixels represent the top k%
+            num_pixels = region_values.numel()
+            n_top_k = max(1, int(self.k * num_pixels))
+
+            # Extract the highest loss values
+            topk_values, _ = torch.topk(region_values, n_top_k)
+
+            # The loss for this region is the mean of its hardest pixels
+            region_losses.append(topk_values.mean())
+
+        # 5. Final mean across all regions
+        return torch.stack(region_losses).mean()
+    
+
 class Tversky(torch.nn.Module):
     def __init__(self, alpha: float = 0.3, beta: float = 0.7, eps: float = 1e-6, weighted=False):
         super().__init__()
