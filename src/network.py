@@ -244,14 +244,14 @@ class InstanceSegmentationModel(pl.LightningModule):
             if not self.dataset_config['dimensions'] == 2:
                 if self.current_epoch == 0:
                     save_as_nifti(images, f"{self.logger.log_dir}/val_sample_0/image.nii.gz", is_multichannel=True)
-                    save_as_nifti(batch["label"], f"{self.logger.log_dir}/val_sample_0/labels.nii.gz")
+                    save_as_nifti(batch["instances"], f"{self.logger.log_dir}/val_sample_0/instances.nii.gz")
                     save_as_nifti(batch["voronoi"], f"{self.logger.log_dir}/val_sample_0/voronoi.nii.gz")
                     save_as_nifti(batch["weight_map"], f"{self.logger.log_dir}/val_sample_0/weight_map.nii.gz")
                 save_as_nifti(preds, f"{self.logger.log_dir}/val_sample_0/preds.nii.gz")
             else:
                 if self.current_epoch == 0:
                     save_2d_as_png(images, f"{self.logger.log_dir}/val_sample_0/image")
-                    save_2d_as_png(batch["label"], f"{self.logger.log_dir}/val_sample_0/labels")
+                    save_2d_as_png(batch["instances"], f"{self.logger.log_dir}/val_sample_0/instances")
                     save_2d_as_png(batch["voronoi"], f"{self.logger.log_dir}/val_sample_0/voronoi")
                     save_2d_as_png(batch["weight_map"], f"{self.logger.log_dir}/val_sample_0/weight_map")
                 save_2d_as_png(preds, f"{self.logger.log_dir}/val_sample_0/preds")
