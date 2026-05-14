@@ -214,11 +214,16 @@ class InstanceSegmentationModel(pl.LightningModule):
         preds_np = preds.detach().cpu().numpy().squeeze()
         labels_np = batch['label'].detach().cpu().numpy().squeeze()
         if self.current_epoch > (self.trainer.max_epochs * 0.05):  # Panoptica instance wise needs a while before it can be applied due to instability early
-            panoptica_metrics = self.evaluator.evaluate(
-                preds_np, labels_np, log_times=False, verbose=False)['instance']
-            self.instance_f1.append(panoptica_metrics.rq)
-            self.instance_recall.append(panoptica_metrics.rec)
-            self.instance_dice.append(panoptica_metrics.sq_dsc)
+            try:
+                panoptica_metrics = self.evaluator.evaluate(
+                    preds_np, labels_np, log_times=False, verbose=False)['instance']
+                self.instance_f1.append(panoptica_metrics.rq)
+                self.instance_recall.append(panoptica_metrics.rec)
+                self.instance_dice.append(panoptica_metrics.sq_dsc)
+            except:
+                self.instance_f1.append(0.5)
+                self.instance_recall.append(0.5)
+                self.instance_dice.append(0.5)
         else:
             self.instance_f1.append(0.5)
             self.instance_recall.append(0.5)
@@ -244,14 +249,14 @@ class InstanceSegmentationModel(pl.LightningModule):
             if not self.dataset_config['dimensions'] == 2:
                 if self.current_epoch == 0:
                     save_as_nifti(images, f"{self.logger.log_dir}/val_sample_0/image.nii.gz", is_multichannel=True)
-                    save_as_nifti(batch["instances"], f"{self.logger.log_dir}/val_sample_0/instances.nii.gz")
+                    save_as_nifti(batch["label"], f"{self.logger.log_dir}/val_sample_0/labels.nii.gz")
                     save_as_nifti(batch["voronoi"], f"{self.logger.log_dir}/val_sample_0/voronoi.nii.gz")
                     save_as_nifti(batch["weight_map"], f"{self.logger.log_dir}/val_sample_0/weight_map.nii.gz")
                 save_as_nifti(preds, f"{self.logger.log_dir}/val_sample_0/preds.nii.gz")
             else:
                 if self.current_epoch == 0:
                     save_2d_as_png(images, f"{self.logger.log_dir}/val_sample_0/image")
-                    save_2d_as_png(batch["instances"], f"{self.logger.log_dir}/val_sample_0/instances")
+                    save_2d_as_png(batch["label"], f"{self.logger.log_dir}/val_sample_0/labels")
                     save_2d_as_png(batch["voronoi"], f"{self.logger.log_dir}/val_sample_0/voronoi")
                     save_2d_as_png(batch["weight_map"], f"{self.logger.log_dir}/val_sample_0/weight_map")
                 save_2d_as_png(preds, f"{self.logger.log_dir}/val_sample_0/preds")
@@ -284,6 +289,7 @@ class InstanceSegmentationModel(pl.LightningModule):
         self.recall.reset()
         self.precision.reset()
         self.cc_dice.reset()
+        self.f2.reset()
         self.quartile_recalls = {
             "q0": [],
             "q1": [],
@@ -308,62 +314,27 @@ class InstanceSegmentationModel(pl.LightningModule):
 
         self.aggregator.evaluate(preds, labels, batch_idx)
         if preds.ndim == 2:
-            preds_np = preds[None, ...]
-            labels_np = labels[None, ...]
+            preds = preds[None, ...]
+            labels = labels[None, ...]
 
         B, C = 1, 2
-        D, H, W = preds_np.shape
+        D, H, W = preds.shape
 
         y_hat = torch.zeros((B, C, D, H, W), dtype=torch.float32)
         y = torch.zeros((B, C, D, H, W), dtype=torch.float32)
 
-        y_hat[0, 1] = torch.from_numpy(preds_np)
-        y[0, 1] = torch.from_numpy(labels_np)
+        y_hat[0, 1] = torch.from_numpy(preds)
+        y[0, 1] = torch.from_numpy(labels)
 
         y_hat[0, 0] = 1 - y_hat[0, 1]
         y[0, 0] = 1 - y[0, 1]
         self.cc_dice(y_pred=y_hat, y=y)
-        gt_quartiles = split_gt_by_volume(labels, self.volume_quartiles)
+        gt_quartiles = split_gt_by_volume(labels, self.dataset_config['quartiles'])
         for i, gt_q in enumerate(gt_quartiles):
             if np.sum(gt_q) == 0:
                 continue
             self.quartile_recalls[f"q{i}"].append(self.evaluator.evaluate(
                 preds, gt_q, log_times=False, verbose=False)['instance'].rec)
-        if True:
-            save_dir = os.path.join(self.logger.log_dir, "test_visuals")
-            os.makedirs(f"{save_dir}/preds", exist_ok=True)
-            os.makedirs(f"{save_dir}/labels", exist_ok=True)
-            Image.fromarray(np.uint8(preds * 255)
-                            ).save(f"{save_dir}/preds/{batch_idx}.png")
-            Image.fromarray(np.uint8(labels * 255)
-                            ).save(f"{save_dir}/labels/{batch_idx}.png")
-            # Compute masks
-            tp = (preds == 1) & (labels == 1)
-            fp = (preds == 1) & (labels == 0)
-            fn = (preds == 0) & (labels == 1)
-            # Create RGB overlay
-            overlay = np.zeros((preds.shape[0], preds.shape[1], 3))
-
-            overlay[tp] = [0, 1, 0]
-            overlay[fp] = [1, 0, 0]
-            overlay[fn] = [0, 0, 1]
-
-            if image.max() > 1:
-                image_norm = image / 255.0
-            else:
-                image_norm = image.copy()
-            if image_norm.ndim == 2:
-                image_rgb = np.stack([image_norm]*3, axis=-1)
-            else:
-                image_rgb = image_norm
-
-            alpha = 0.5
-            blended = (1 - alpha) * image_rgb + alpha * overlay
-            blended_uint8 = np.uint8(np.clip(blended * 255, 0, 255))
-
-            save_path = os.path.join(save_dir, f"overlay_{batch_idx}.png")
-
-            Image.fromarray(blended_uint8).save(save_path)
 
     def on_test_epoch_end(self):
         precision = self.precision.compute()
