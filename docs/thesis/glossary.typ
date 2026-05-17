@@ -54,6 +54,12 @@
     group: "Abbreviations",
   ),
   (
+    key: "dsc",
+    short: "DSC",
+    long: "Dice Metric",
+    group: "Abbreviations",
+  ),
+  (
     key: "cnn",
     short: "CNN",
     long: "Convolutional Neural Network",
@@ -75,6 +81,12 @@
     key: "wmh",
     short: "WMH",
     long: "White Matter Hyperintensity",
+    group: "Abbreviations",
+  ),
+  (
+    key: "iw",
+    short: "iw",
+    long: "inverse weighting",
     group: "Abbreviations",
   ),
   (
@@ -102,12 +114,6 @@
     short: $R$,
     long: [${R_1, R_2, dots, R_n}$],
     description: [The set of $n$ regions in an image, each of which contains exactly one seed instance],
-    group: "Mathematical Notations and Definitions",
-  ),
-  (
-    key: "L",
-    short: $"L": Omega mapsto {0,1}$,
-    description: [The binary label function that maps a pixel in the image domain to a binary value],
     group: "Mathematical Notations and Definitions",
   ),
   (
