@@ -20,7 +20,7 @@ class WeightedLossWrapper(torch.nn.Module):
         voronoi = batch["voronoi"]     # Same shape
         
         weight_map_std = batch['weight_map']
-        weight_map_agg = batch['voronoi_iw']
+        weight_map_agg = batch['v_iw']
         B = labels.shape[0]
         
         # 1. Compute the True Positive (TP) mask

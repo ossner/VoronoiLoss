@@ -10,8 +10,8 @@ class ComputeWeightMapsd(MapTransform):
         super().__init__(keys, allow_missing_keys)
         self.mountain_sigma = mountain_sigma_sc
         self.island_sigma = island_sigma_sc
-        allowed_maps = ['none', 'iw', 'v_region', 'v_size',
-                        'v_share', 'v_mountains', 'v_islands']
+        allowed_maps = ['none', 'iw', 'v_region', 'v_iw',
+                        'v_mountains', 'v_islands', 'v_adaptive']
         assert concept in allowed_maps, f'Provided weight map {concept} not valid. Choose one of {allowed_maps}'
         self.concept = concept
 
@@ -36,6 +36,7 @@ class ComputeWeightMapsd(MapTransform):
 
             # Instantiate map as unit tensor
             map = np.ones_like(inst_np, dtype=np.float32)
+            map2 = np.ones_like(inst_np, dtype=np.float32)
 
             # The overall budget that can be distributed (B)
             total_budget = inst_np.size
@@ -62,11 +63,18 @@ class ComputeWeightMapsd(MapTransform):
                         ((len(region_ids)+1)*np.sum(inst_np == 0))
                 elif self.concept == 'v_region':
                     map[vor_mask] = region_budget / area_vor
-                elif self.concept == 'v_size':
+                elif self.concept == 'v_iw':
                     alpha = 0.5
                     map[inst_mask] = alpha * \
                         region_budget / area_inst
                     map[bg_mask] = (
+                        1-alpha) * region_budget / area_bg
+                elif self.concept == 'v_adaptive':
+                    alpha = 0.5
+                    map[vor_mask] = region_budget / area_vor
+                    map2[inst_mask] = alpha * \
+                        region_budget / area_inst
+                    map2[bg_mask] = (
                         1-alpha) * region_budget / area_bg
                 elif self.concept == 'v_mountains':
                     sigma = self.mountain_sigma * np.sqrt(area_inst / np.pi)
@@ -98,7 +106,10 @@ class ComputeWeightMapsd(MapTransform):
             assert total_delta < (
                 1e-5 * unit_sum), f"Sum over weight map {self.concept} not within range of unit tensor, difference: {total_delta}"
             map = torch.from_numpy(map[None, ...])
+            map2 = torch.from_numpy(map2[None, ...])
             if torch.is_tensor(instances):
                 map = map.to(instances.device)
+                map2 = map2.to(instances.device)
             d['weight_map'] = map
+            d['v_iw'] = map2
         return d

@@ -89,15 +89,15 @@ class InstanceSegmentationModel(pl.LightningModule):
     def prepare_data(self):
         # All keys for monai transforms that need to me spatially augmented together
         SPATIAL_KEYS = [
-            "image", "label", "voronoi", "weight_map", "instances", 'voronoi_iw'
+            "image", "label", "voronoi", "weight_map", 'v_iw', "instances"
         ]
         MODES = [
             "bilinear",  # image
             "nearest",   # label
             "nearest",   # voronoi
             "bilinear",  # weight_map
+            "bilinear",  # v_iw if adaptive, else all 1
             "nearest",   # instances
-            "bilinear",  # weight_map_aggresive
         ]
 
         train_transforms = [
