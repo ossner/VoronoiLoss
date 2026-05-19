@@ -40,7 +40,7 @@ from CCMetrics import CCDiceMetric
 
 
 class InstanceSegmentationModel(pl.LightningModule):
-    def __init__(self, data_dir, dataset_config, loss_dict, weight_map, lr, seed):
+    def __init__(self, data_dir, dataset_config, loss_dict, weight_map, lr, seed, adaptive=True):
         super().__init__()
         set_determinism(seed=seed)
         self.model = UNet(
@@ -52,7 +52,8 @@ class InstanceSegmentationModel(pl.LightningModule):
             num_res_units=2,
             norm=Norm.BATCH,
         )
-        self.loss_function = WeightedLossWrapper(loss_dict=loss_dict)
+        self.adaptive = adaptive
+        self.loss_function = WeightedLossWrapper(loss_dict=loss_dict, adaptive=self.adaptive)
         self.weight_map = weight_map
         self.dice = DiceMetric(
             include_background=True,
@@ -80,7 +81,7 @@ class InstanceSegmentationModel(pl.LightningModule):
         self.dataset_config = dataset_config
         self.data_dir = data_dir
         self.save_hyperparameters(
-            'dataset_config', 'loss_dict', "lr", 'weight_map', 'seed')
+            'dataset_config', 'loss_dict', 'adaptive', "lr", 'weight_map', 'seed')
 
     def forward(self, x):
         return self.model(x)
@@ -88,7 +89,7 @@ class InstanceSegmentationModel(pl.LightningModule):
     def prepare_data(self):
         # All keys for monai transforms that need to me spatially augmented together
         SPATIAL_KEYS = [
-            "image", "label", "voronoi", "weight_map", "instances"
+            "image", "label", "voronoi", "weight_map", "instances", 'voronoi_iw'
         ]
         MODES = [
             "bilinear",  # image
@@ -96,6 +97,7 @@ class InstanceSegmentationModel(pl.LightningModule):
             "nearest",   # voronoi
             "bilinear",  # weight_map
             "nearest",   # instances
+            "bilinear",  # weight_map_aggresive
         ]
 
         train_transforms = [
@@ -251,14 +253,20 @@ class InstanceSegmentationModel(pl.LightningModule):
                     save_as_nifti(images, f"{self.logger.log_dir}/val_sample_0/image.nii.gz", is_multichannel=True)
                     save_as_nifti(batch["label"], f"{self.logger.log_dir}/val_sample_0/labels.nii.gz")
                     save_as_nifti(batch["voronoi"], f"{self.logger.log_dir}/val_sample_0/voronoi.nii.gz")
-                    save_as_nifti(batch["weight_map"], f"{self.logger.log_dir}/val_sample_0/weight_map.nii.gz")
+                    save_as_nifti(batch['weight_map'], f"{self.logger.log_dir}/val_sample_0/weight_map.nii.gz")
+                elif self.adaptive:
+                    weight_map = self.loss_function.adapt_weight_map(y_pred=outputs, batch=batch)['weight_map'] if self.adaptive else batch['weight_map']
+                    save_as_nifti(weight_map, f"{self.logger.log_dir}/val_sample_0/weight_map.nii.gz")
                 save_as_nifti(preds, f"{self.logger.log_dir}/val_sample_0/preds.nii.gz")
             else:
                 if self.current_epoch == 0:
                     save_2d_as_png(images, f"{self.logger.log_dir}/val_sample_0/image")
                     save_2d_as_png(batch["label"], f"{self.logger.log_dir}/val_sample_0/labels")
                     save_2d_as_png(batch["voronoi"], f"{self.logger.log_dir}/val_sample_0/voronoi")
-                    save_2d_as_png(batch["weight_map"], f"{self.logger.log_dir}/val_sample_0/weight_map")
+                    save_2d_as_png(batch['weight_map'], f"{self.logger.log_dir}/val_sample_0/weight_map")
+                elif self.adaptive:
+                    weight_map = self.loss_function.adapt_weight_map(y_pred=outputs, batch=batch)['weight_map'] if self.adaptive else batch['weight_map']
+                    save_2d_as_png(weight_map, f"{self.logger.log_dir}/val_sample_0/weight_map")
                 save_2d_as_png(preds, f"{self.logger.log_dir}/val_sample_0/preds")
                 
         return val_loss
