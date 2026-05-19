@@ -108,6 +108,7 @@ def run_train(args):
                     weight_map=w_map,
                     lr=args.lr,
                     seed=args.seed,
+                    adaptive=(w_map == 'v_adaptive')
                 )
 
                 trainer.fit(model)
