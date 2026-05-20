@@ -103,8 +103,7 @@ class WeightedDice(torch.nn.Module):
     ) -> torch.Tensor:
         probs = torch.sigmoid(y_pred)
         y = batch['label']
-        
-        probs = probs * batch['weight_map']
+        w = batch['weight_map']
 
         if not local:
             mask_map = torch.ones_like(y)
@@ -114,14 +113,16 @@ class WeightedDice(torch.nn.Module):
         region_ids = torch.unique(mask_map)
         region_losses = []
         for r_id in region_ids:
-            mask = (mask_map == r_id).float()
-            m_probs = probs * mask
-            m_y = y * mask
-            intersection = torch.sum(m_probs * m_y)
-            denominator = torch.sum(m_probs**2 + m_y**2)
+            region_mask = (mask_map == r_id)
+            
+            r_probs = probs[region_mask]
+            r_y = y[region_mask]
+            r_w = w[region_mask]
+            
+            intersection = torch.sum(r_w * r_probs * r_y)
+            denominator = torch.sum(r_w * (r_probs**2 + r_y**2))
 
-            dice_score = (2.0 * intersection + self.eps) / \
-                (denominator + self.eps)
+            dice_score = (2.0 * intersection + self.eps) / (denominator + self.eps)
             region_losses.append(1.0 - dice_score)
         return torch.stack(region_losses).mean()
 
@@ -137,88 +138,30 @@ class WeightedBCE(torch.nn.Module):
         local = False
     ) -> torch.Tensor:
         y = batch['label']
-        bce_map = F.binary_cross_entropy_with_logits(
-            y_pred, y, reduction="none")
+        bce_map = F.binary_cross_entropy_with_logits(y_pred, y, reduction="none")
 
         bce_map = bce_map * batch['weight_map']
 
-        if not local:
-            mask_map = torch.ones_like(y)
-        else: 
-            mask_map = batch['voronoi']
+        # If local is turned off, the entire image is the same region
+        mask_map = batch['voronoi'] if local else torch.ones_like(y)
 
         region_ids = torch.unique(mask_map)
         region_losses = []
 
         for r_id in region_ids:
             mask = (mask_map == r_id)
-            region_bce = bce_map[mask].mean()
-            region_loss = region_bce
-            region_losses.append(region_loss)
+            r_bce = bce_map[mask].mean()
+            
+            region_losses.append(r_bce)
         return torch.stack(region_losses).mean()
 
-
-class TopKLoss(torch.nn.Module):
-    def __init__(self, k: float = 0.1):
-        """
-        Args:
-            k: The fraction of hardest pixels to keep (0.0 < k <= 1.0).
-            weighted: Whether to apply the weight_map from the batch.
-        """
-        super().__init__()
-        self.k = k
-
-    def forward(
-        self,
-        y_pred: torch.Tensor,  # Logits (B, 1, H, W)
-        batch: dict,
-        local: bool = False
-    ) -> torch.Tensor:
-        y = batch['label']
-
-        # 1. Compute pixel-wise BCE (no reduction yet)
-        bce_map = F.binary_cross_entropy_with_logits(
-            y_pred, y, reduction="none"
-        )
-
-        # 2. Apply Weight Map
-        bce_map = bce_map * batch['weight_map']
-
-        # 3. Determine segmentation regions
-        if not local:
-            mask_map = torch.ones_like(y)
-        else:
-            mask_map = batch['voronoi']
-
-        region_ids = torch.unique(mask_map)
-        region_losses = []
-
-        # 4. Apply TopK per region
-        for r_id in region_ids:
-            mask = (mask_map == r_id)
-            region_values = bce_map[mask]
-
-            # Calculate how many pixels represent the top k%
-            num_pixels = region_values.numel()
-            n_top_k = max(1, int(self.k * num_pixels))
-
-            # Extract the highest loss values
-            topk_values, _ = torch.topk(region_values, n_top_k)
-
-            # The loss for this region is the mean of its hardest pixels
-            region_losses.append(topk_values.mean())
-
-        # 5. Final mean across all regions
-        return torch.stack(region_losses).mean()
-    
 
 class Tversky(torch.nn.Module):
-    def __init__(self, alpha: float = 0.3, beta: float = 0.7, eps: float = 1e-6, weighted=False):
+    def __init__(self, alpha: float = 0.3, beta: float = 0.7, eps: float = 1e-6):
         super().__init__()
         self.alpha = alpha
         self.beta = beta
         self.eps = eps
-        self.weighted = weighted
 
     def forward(
         self,
@@ -228,33 +171,29 @@ class Tversky(torch.nn.Module):
     ) -> torch.Tensor:
         probs = torch.sigmoid(y_pred)
         y = batch['label']
-        
-        if self.weighted:
-            weight_map = batch['weight_map']
-            probs = probs * weight_map
+        w = batch['weight_map']
 
-        if not local:
-            mask_map = torch.ones_like(y)
-        else: 
-            mask_map = batch['voronoi']
+        mask_map = batch['voronoi'] if local else torch.ones_like(y)
 
         region_ids = torch.unique(mask_map)
         region_losses = []
 
         for r_id in region_ids:
-            mask = (mask_map == r_id).float()
-
-            m_probs = probs * mask
-            m_y = y * mask
-
-            TP = torch.sum(m_probs * m_y)
-            FP = torch.sum(m_probs * (1.0 - m_y))
-            FN = torch.sum((1.0 - m_probs) * m_y)
-
-            tversky = (TP + self.eps) / (
+            mask = (mask_map == r_id)
+            
+            r_probs = probs[mask]
+            r_y = y[mask]
+            r_w = w[mask]
+            
+            TP = torch.sum(r_w * r_probs * r_y)
+            FP = torch.sum(r_w * r_probs * (1.0 - r_y))
+            FN = torch.sum(r_w * (1.0 - r_probs) * r_y)
+            
+            # Symmetrically distribute custom spatial weights across the matrix components
+            tversky_index = (TP + self.eps) / (
                 TP + self.alpha * FP + self.beta * FN + self.eps
             )
 
-            region_losses.append(1.0 - tversky)
+            region_losses.append(1.0 - tversky_index)
 
         return torch.stack(region_losses).mean()
