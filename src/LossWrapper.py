@@ -23,8 +23,9 @@ class WeightedLossWrapper(torch.nn.Module):
         weight_map_agg = batch['v_iw']
         B = labels.shape[0]
         
-        # 1. Compute the True Positive (TP) mask
-        tp_mask = (torch.sigmoid(y_pred) > 0.5) & (labels == 1)
+        # 1. Compute the True Positive (TP) mask and Ground Truth (GT) mask
+        gt_mask = (labels == 1)
+        tp_mask = (torch.sigmoid(y_pred) > 0.5) & gt_mask
         
         # 2. Shift Voronoi IDs to create unique global IDs across the entire batch
         max_id = int(voronoi.max())
@@ -36,11 +37,12 @@ class WeightedLossWrapper(torch.nn.Module):
         offsets = torch.arange(B, device=voronoi.device).view(view_shape) * num_regions_per_sample
         global_voronoi = (voronoi + offsets).long()
         
-        # 3. Count TPs using bincount
+        # 3. Count TPs and GTs using bincount
         total_global_regions = B * num_regions_per_sample
         
         flat_voronoi = global_voronoi.as_tensor().flatten()
         flat_weights = tp_mask.as_tensor().flatten().float()
+        flat_gt = gt_mask.as_tensor().flatten().float()
         
         # Check if strict determinism is turned on globally
         is_deterministic = torch.are_deterministic_algorithms_enabled()
@@ -55,13 +57,19 @@ class WeightedLossWrapper(torch.nn.Module):
                 weights=flat_weights, 
                 minlength=total_global_regions
             )
+            region_gt_counts = torch.bincount(
+                flat_voronoi, 
+                weights=flat_gt, 
+                minlength=total_global_regions
+            )
         finally:
             if is_deterministic:
                 # Re-enable strict determinism right after
                 torch.use_deterministic_algorithms(True)
         
-        # 4. Identify regions that have zero TPs
-        missed_global_regions = (region_tp_counts == 0)
+        # 4. Identify regions that were missed
+        # A region is missed ONLY if it has GT pixels present, but 0 TPs.
+        missed_global_regions = (region_gt_counts > 0) & (region_tp_counts == 0)
         
         # 5. Map the missed status back to the spatial image dimensions
         missed_mask = missed_global_regions[global_voronoi]
@@ -73,10 +81,90 @@ class WeightedLossWrapper(torch.nn.Module):
         batch["weight_map"] = final_weight_map
         return batch
     
+    def adapt_weight_map_budget(
+        self, 
+        y_pred: torch.Tensor, 
+        batch: Dict[str, Any], 
+        penalty: float = 4.0
+    ) -> Dict[str, Any]:
+        labels = batch["label"]       # Shape: (B, 1, H, W) or (B, 1, H, W, D)
+        voronoi = batch["voronoi"]     # Same shape
+        weight_map_std = batch['weight_map']
+        B = labels.shape[0]
+        
+        # 1. Compute masks
+        gt_mask = (labels == 1)
+        tp_mask = (torch.sigmoid(y_pred) > 0.5) & gt_mask
+        
+        # 2. Shift Voronoi IDs to create unique global IDs across the entire batch
+        max_id = int(voronoi.max())
+        num_regions_per_sample = max_id + 1
+        
+        view_shape = [B] + [1] * (voronoi.ndim - 1)
+        offsets = torch.arange(B, device=voronoi.device).view(view_shape) * num_regions_per_sample
+        global_voronoi = (voronoi + offsets).long()
+        
+        # 3. Count TPs and GTs using bincount
+        total_global_regions = B * num_regions_per_sample
+        
+        flat_voronoi = global_voronoi.flatten()
+        flat_weights = tp_mask.flatten().float()
+        flat_gt = gt_mask.flatten().float()
+        
+        is_deterministic = torch.are_deterministic_algorithms_enabled()
+        if is_deterministic:
+            torch.use_deterministic_algorithms(False)
+            
+        try:
+            region_tp_counts = torch.bincount(
+                flat_voronoi, 
+                weights=flat_weights, 
+                minlength=total_global_regions
+            )
+            region_gt_counts = torch.bincount(
+                flat_voronoi, 
+                weights=flat_gt, 
+                minlength=total_global_regions
+            )
+        finally:
+            if is_deterministic:
+                torch.use_deterministic_algorithms(True)
+        
+        # 4. Classify regions based on your rules
+        # Condition 1: Has foreground AND at least 1 true positive -> Weight = 1.0
+        correct_regions = (region_gt_counts > 0) & (region_tp_counts > 0)
+        
+        # Default all regions to the penalty value (handles empty patches & completely missed regions)
+        region_weights = torch.full(
+            (total_global_regions,), 
+            penalty, 
+            dtype=torch.float32, 
+            device=voronoi.device
+        )
+        # Override correct regions to 1.0
+        region_weights[correct_regions] = 1.0
+        
+        # 5. Map region-wise weights back into full spatial dimension
+        initial_weight_map = region_weights[global_voronoi]
+        
+        # 6. Normalize map to match original standard weight map budget
+        original_sum = weight_map_std.sum()
+        initial_sum = initial_weight_map.sum()
+        
+        # Guard against a zero-sum map (highly unlikely, but safe practice)
+        if initial_sum > 0:
+            final_weight_map = initial_weight_map * (original_sum / initial_sum)
+        else:
+            final_weight_map = initial_weight_map
+        
+        # Update the batch dictionary
+        batch["weight_map"] = final_weight_map
+        return batch
+    
     def forward(self, y_pred: torch.Tensor, batch: torch.Tensor) -> torch.Tensor:
         # Re-calculate weight map if adaptive is turned on
         if self.adaptive:
-            batch = self.adapt_weight_map(y_pred, batch)
+            batch = self.adapt_weight_map_budget(y_pred, batch)
             
         global_total = torch.tensor(0.0, device=y_pred.device, dtype=y_pred.dtype)
         local_total = torch.tensor(0.0, device=y_pred.device, dtype=y_pred.dtype)
