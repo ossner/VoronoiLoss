@@ -2,7 +2,7 @@
 
 = Background <chapter_background>
 This section is dedicated to the knowledge required for the understanding and evaluation of the concepts and themes explored in this thesis.
-@semanticsegmentation introduces the topic of semantic segmentation as well as general principles of deep learning. @connectedcomponents formalizes specific concepts in the domain  and how these concepts give rise to the problem space introduced in @multi-instance-semantic-segmentation at the core of this thesis. @voronoi_tessellation gives an overview and a definition of the separation of that space into distance-based regions that aims to address a problem introduced in @instance_imbalance that is often encountered in biomedical imaging.
+@semanticsegmentation introduces the topic of semantic segmentation as well as general principles of deep learning. @sec_connectedcomponents formalizes specific concepts in the domain  and how these concepts give rise to the problem space introduced in @multi-instance-semantic-segmentation at the core of this thesis. @voronoi_tessellation gives an overview and a definition of the separation of that space into distance-based regions that aims to address a problem introduced in @instance_imbalance that is often encountered in biomedical imaging.
 
 == Semantic Segmentation <semanticsegmentation>
 Semantic Segmentation is a subset of mainly supervised learning problems in which a neural network is trained to assign a class label to every pixel in an image. This is an aged and important problem in many domains such as medical imaging and autonomous driving among others and much research has been devoted to improving the detection and delineation of objects in images. This section will cover the basics especially with respect to binary segmentation.
@@ -13,7 +13,7 @@ Binary semantic segmentation can be seen as the base case wherein a model is giv
 
 $
   Y: {y_1, y_2, dots, y_N | y_i in {0,1}}
-$<labelfunction>
+$<eq_label>
 
 This is also called the reference annotation of the accompanying image. This annotation in segmentation problems is usually obtained through domain experts meticulously identifying and delineating the different classes in the input images.
 
@@ -29,9 +29,11 @@ This is also called the reference annotation of the accompanying image. This ann
 ) <figsemanticinput>
 
 The aim of semantic segmentation is to train a classifier that can approximate $Y$ and generalize to unseen data, we'll call the output of the classifier the *prediction*
+
 $
   hat(Y): {hat(y)_1, hat(y)_2, dots, hat(y)_N | hat(y)_i in {0,1}}
-$
+$<eq_pred>
+
 This classifier is given an input image and it will produce a binary output image corresponding to the predicted label map.
 
 During the training phase of the classifier, a function is needed that quantifies the deviation of the prediction $hat(Y)$ to the label $Y$ to provide a learning signal to the classifier, ensuring it can adjust its parameters to minimize this error. This is done through the backpropagation algorithm.
@@ -66,9 +68,9 @@ $
 $<eqDSC>
 
 This is a famous segmentation metric that quantifies the overlap of the prediction and label and returns a number from 0 to 1.
-The closer the value of @dsc is to $1$, the "better" the segmentation result is said to be. Which is why minimizing $cal(L)_"DSC"=1-"DSC"$ is a commonly used training goal for the classifier. The loss functions that we used in this thesis are described in @loss_functions.
+The closer the value of @dsc is to $1$, the "better" the segmentation result is said to be. Which is why minimizing $cal(L)_"DSC"=1-"DSC"$ is a commonly used training goal for the classifier. The loss functions that we used in this thesis are described in @sec_loss_functions_method.
 
-=== Network Optimization
+=== Network Optimization <sec_networkoptimization>
 The network classifier described above is trained in discrete steps that incorporate the gradiend of the loss function as well as a scaling learning rate parameter $alpha_"lr"$ in the *optimization rule*. The optimization iteratively updates the classifiers parameters $theta$ at a discrete time step $k$ to the next parameters at time $k+1$:
 $
   theta_(k+1)=theta_k+alpha_("lr") gradient cal(L)(theta_k)
@@ -77,7 +79,19 @@ The learning rate parameter $alpha_"lr"$ therefore determines how sensitive the 
 
 The learning rate is an important experimental variable to determine and control for in comparisons.
 
-== Connected Components <connectedcomponents>
+=== Weight Maps <sec_weight_maps_bg>
+Weight maps are tensors of the same shape as the image label that can be used in segmentation tasks to introduce biases in order to steer loss behaviour. Individual voxels are assigned a numerical value that determines the importance of that voxel, resulting in a higher loss value if a voxel with a high weight has been misidentified.
+They can be formulated similarly to $Y$ and $hat(Y)$:
+$
+  W : {w_1, w_2, dots, w_N | w_i in RR}
+$<eq_weightmap>
+In order to keep the total loss magnitude theoretically consistent, a constraint is applied to ensure the sum of the weight map is equalized to the number of voxels in the image:
+$
+  sum_(i=1)^(N) w_i in W = sum_(i=1)^(N) 1
+$
+Weight maps allow for biases to be manually introduced to the loss calculation, punishing the model more if it mis-identifies important areas of the image. A concrete formulation of several weight maps and how they are applied to different loss functions is proposed in @sec_weight_maps_method.
+
+== Connected Components <sec_connectedcomponents>
 The connected components algorithm is a procedure in computer vision which provides a way to differentiate between subsets of a space. These subsets in our case of binary segmentation are instances determined by the previously described binary label map and a connectivity parameter. In the application of pixelated images, interconnectedness of components is determined by the neighborhood $cal(N)$ of a pixel $p$.
 
 Formally, the labels can be decomposed into $I$, the set of $k$ spatially separate components $I:{I_1, I_2, dots, I_k}$ (also called instances). Each instance $I_i in I$ contains a set of pixels (in 2D) or voxels (in 3D) such that $I_i = {p_1, p_2, dots, I_k}$ and:
@@ -103,7 +117,7 @@ Using this formulation, it becomes apparent that a partition is formed such that
 == Multi-Instance Semantic Segmentation <multi-instance-semantic-segmentation>
 This section combines the topics introduced previously into the domain of multi-instance semantic segmentation. This is a special subset of problems in semantic segmentation in which the number of connected component foreground instances $|L|$ is especially large. While there exists no formal definition of the number of instances required to classify a given segmentation problem as multi-instance, there are many cases in which this delineation makes sense.
 
-It is important to differentiate between multi-instance semantic segmentation and instance segmentation. Though they carry similar names, they are fundamentally different topics in machine learning. @figinstancevssemantic shows the difference between these two approaches: Instance segmentation aims to train networks to differentiate between thematically separate objects in an image though they might be connected in the sense described in @connectedcomponents. To achieve this, the thematically seperated objects are distinguished during the labeling process, assigning separate labels to each instance. This is fundamentally incompatible with binary segmentation, as can be gathered from @labelfunction.
+It is important to differentiate between multi-instance semantic segmentation and instance segmentation. Though they carry similar names, they are fundamentally different topics in machine learning. @figinstancevssemantic shows the difference between these two approaches: Instance segmentation aims to train networks to differentiate between thematically separate objects in an image though they might be connected in the sense described in @sec_connectedcomponents. To achieve this, the thematically seperated objects are distinguished during the labeling process, assigning separate labels to each instance. This is fundamentally incompatible with binary segmentation, as can be gathered from @eq_label.
 
 #figure(
   grid(
@@ -155,7 +169,7 @@ These distances can be efficiently computed using the @edt algorithm. @figvorono
 ) <figvoronoi>
 
 == The Instance Imbalance Problem <instance_imbalance>
-The eponymous multiple instances in multi-instance segmentation stem from the specific problem domain wherein images contain many of these spatially separate components. Biomedical imaging is a domain which contains many such problem cases. Anatomies or pathologies can manifest as many spatially separate instances of the same class. Examples of these include many types of cancers such as liver tumors or brain metastases, but also anatomical features such as cells or their organelles. Specific examples of such applications are discussed in @datasets.
+The eponymous multiple instances in multi-instance segmentation stem from the specific problem domain wherein images contain many of these spatially separate components. Biomedical imaging is a domain which contains many such problem cases. Anatomies or pathologies can manifest as many spatially separate instances of the same class. Examples of these include many types of cancers such as liver tumors or brain metastases, but also anatomical features such as cells or their organelles. Specific examples of such applications are discussed in @sec_datasets.
 
 
 These cases often contain instances of diverse shapes, sizes and numbers. Since the data implicitly steers the behaviour of the neural network through the loss function, a phenomenon occurs where loss functions prioritize larger instances as an "easier way" to improve the segmentation loss.
