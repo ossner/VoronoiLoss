@@ -1,4 +1,4 @@
-#import "../utils.typ": todo
+#import "../utils.typ": todo, class_colors
 #import "@preview/glossarium:0.5.9": gls
 
 = Methodology <chapter_methodology>
@@ -19,7 +19,10 @@ Some reported statistics of interest on multi-instance datasets are:
 
 Adhering to current methods and standards, all datasets have been partitioned into a train, validation and test set, with the train set being used for algorithmic model optimization, the validation (val) set being used for hyperparameter tuning such as learning rate adjustment and the test set being used only once to report the final metrics of the model.
 
+All statistics were calculated on the train and val set only to remain agnostic to the test set.
+
 === On Statistics and Fidelity of Multi-Instance Segmantation Datasets <dataset_fidelity>
+#todo("Perhaps split this into statistics description and reasoning and later fidelity")
 Since this thesis concerns binary semantic segmentation, all datasets can be abstracted into their constituent components as follows:
 An image of shape $(n_x,n_y)$ ($(n_x,n_y,n_z)$ in the case of 3D) and a binarized label $Y$ of the same shape for each image. Each image and accompanying label therefore contains a total of $N=n_x*n_y*n_z$ voxels.
 
@@ -32,15 +35,24 @@ It furthermore analyzes probable annotation errors and how the inclusion of thos
 === Brain Metastases
 The Stanford brainmetshare dataset @brainmetshare consists of 105 labeled MRI scans with multiple co-registered channels of the human head, with binary labels indicating metastatic cancer lesions. The dataset has been randomly split into (train, validation, test) sets with proportions $(0.7, 0.15, 0.15)$ respectively.
 
+The dataset provides multi-modal pre- and post-contrast images, of which #todo("which channels") were used during training. Labels include at least one brain metastasis. @figsbmmetrics shows a sample of an image with the metastasis as colored instances and several statistical metrics. Most images contain fewer than 20 instances, though some images can contain more than 100 metastases. Morphologically the metastases manifest as relatively uniformly spherical lesions. An instance typically makes up only a small fraction of the voronoi region it gives rise to, likely due to the significant number of voxels that lie outside of the brain. Within images with multiple instances, a significant dominance can be found where the largest instance makes up a high proportion of the total foreground pixels.
+
 #figure(
   grid(
-    columns: 2,
-    row-gutter: 2mm,
-    column-gutter: 2mm,
+    columns: 4,
+    rows:2,
+    align: center + horizon,
     image("../figures/sbmsample.png", width: 45%),
-    image("../figures/sbm_metrics.png", width: 100%),
+    image("../figures/metrics/mets/num_instances_hist.png", width: 100%),
+    image("../figures/metrics/mets/instance_area_hist.png", width: 100%),
+    image("../figures/metrics/mets/instance_dominance.png", width: 100%),
+
+    image("../figures/metrics/mets/voronoi_fraction.png", width: 100%),
+    image("../figures/metrics/mets/compactness.png", width: 100%),
+    image("../figures/metrics/mets/sphereness.png", width: 100%),
+    image("../figures/metrics/mets/stringiness.png", width: 100%),
   ),
-  caption: [
+  caption: [Visualizations of several aspects of the brain metastases dataset. Top left shows a sample image with three colored instances in diverse regions of the brain. The next graph shows a histogram of the number of instances per image with most images containing 10 or fewer metastases. #todo("How to describe rest of stats, how deep and should the morphology maybe go in the appendix?")
   ],
 ) <figsbmmetrics>
 #todo("Split description, instance distribution, sizes and variance, etc.")
@@ -48,13 +60,20 @@ The Stanford brainmetshare dataset @brainmetshare consists of 105 labeled MRI sc
 The @wmh dataset @wmhdataset contains 170 MRI scans with labels indicating the presence of @wmh:pl which manifest as especially morphologically diverse instances.
 #figure(
   grid(
-    columns: 2,
-    row-gutter: 2mm,
-    column-gutter: 2mm,
+    columns: 4,
+    rows: 2,
+    align: center + horizon,
     image("../figures/wmhsample.png", width: 45%),
-    image("../figures/wmh_metrics.png", width: 100%),
+    image("../figures/metrics/wmh/num_instances_hist.png", width: 100%),
+    image("../figures/metrics/wmh/instance_area_hist.png", width: 100%),
+    image("../figures/metrics/wmh/instance_dominance.png", width: 100%),
+
+    image("../figures/metrics/wmh/voronoi_fraction.png", width: 100%),
+    image("../figures/metrics/wmh/compactness.png", width: 100%),
+    image("../figures/metrics/wmh/sphereness.png", width: 100%),
+    image("../figures/metrics/wmh/stringiness.png", width: 100%),
   ),
-  caption: [
+  caption: [Top left shows a sample MRI with highlighted and colored connected components of white matter hyperintensity labels.
   ],
 ) <figwmhmetrics>
 #todo("Split description, instance distribution, sizes and variance, etc.")
@@ -63,24 +82,26 @@ In the platelet organelles dataset @plateletdataset, @em was used to image multi
 The 72 individual 2D slices were extracted from the original .tiff files and split into (train, val, test) with proportions $(0.6, 0.2, 0.2)$ from each file. This served as a means to gather data more generalized data since intensities between scans can vary greatly.
 #figure(
   grid(
-    columns: 2,
-    row-gutter: 2mm,
-    column-gutter: 2mm,
-    image("../figures/cvsample.jpeg", width: 45%),
-    image("../figures/cv_metrics.png", width: 100%),
+    columns: 4,
+    align: center + horizon,
+    image("../figures/cvsample.jpeg", width: 75%),
+    image("../figures/metrics/cv/num_instances_hist.png", width: 100%),
+    image("../figures/metrics/cv/instance_area_hist.png", width: 100%),
+    image("../figures/metrics/cv/instance_dominance.png", width: 100%),
   ),
-  caption: [
+  caption: [Alpha granules of human platelet cells
   ],
 ) <figplateletcvmetrics>
 #figure(
   grid(
-    columns: 2,
-    row-gutter: 2mm,
-    column-gutter: 2mm,
-    image("../figures/agsample.jpeg", width: 45%),
-    image("../figures/ag_metrics.png", width: 100%),
+    columns: 4,
+    align: center + horizon,
+    image("../figures/agsample.jpeg", width: 75%),
+    image("../figures/metrics/ag/num_instances_hist.png", width: 100%),
+    image("../figures/metrics/ag/instance_area_hist.png", width: 100%),
+    image("../figures/metrics/ag/instance_dominance.png", width: 100%),
   ),
-  caption: [
+  caption: [Canalicular vessels of human platelet cells
   ],
 ) <figplateletagmetrics>
 
@@ -89,13 +110,15 @@ The 72 individual 2D slices were extracted from the original .tiff files and spl
 The EPFL mitochondria dataset introduced by Lucchi et al. @epflmitochondria is another @em dataset that shows images taken from the hippocampus region of the brain with segmentations of mitochondrial organelles and serves as a common benchmark for certain segmentation tasks. 2D slices were again extracted from the 3D volume and used as independent image samples.
 #figure(
   grid(
-    columns: 2,
-    row-gutter: 2mm,
-    column-gutter: 2mm,
-    image("../figures/connected_components.png", width: 45%),
-    image("../figures/mit_metrics.png", width: 100%),
+    columns: 4,
+    align: center + horizon,
+    column-gutter: 0mm,
+    image("../figures/connected_components.png", width: 90%),
+    image("../figures/metrics/mit/num_instances_hist.png", width: 100%),
+    image("../figures/metrics/mit/instance_area_hist.png", width: 100%),
+    image("../figures/metrics/mit/instance_dominance.png", width: 100%),
   ),
-  caption: [
+  caption: [Mitochondria of brain neurons.
   ],
 ) <figepflmetrics>
 #todo("Split description, instance distribution, sizes and variance, etc.")
@@ -113,10 +136,10 @@ Global metrics operate simply on the label $Y$ and the prediction $hat(Y)$, they
 Two metrics often seen as complementary are precision and recall (which are also known as specificity and sensitivity respectively):
 $
   "precision" = frac("TP","TP"+"FP")
-$
+$<eqprecision>
 $
   "recall" = frac("TP","TP"+"FN")
-$
+$<eqrecall>
 
 Many other measurements can be derived from precision and recall, one such metric has already been proposed in @eqDSC, but it can be generalized in the case of binary segmentation as the $F_beta$ metric where $beta$ is a non-negative scalar value acting as a weight:
 
@@ -128,7 +151,32 @@ $F_1$ is equal to the $"DSC"$. While $beta=1$ is the most commonly chosen value 
 
 $F_2$ places a higher emphasis on the number of @tp and reduces the importance of @fp values, meaning it results in a higher score if a prediction identifies more positive pixels even if it produces an equal number of false positives. This can be considered as especially important in the high-stakes domain of medical imaging where finding segmentation pixels is often more important than predicting real negatives as positives.
 === Instance-wise Metrics
-Instance-wise metrics are of particular interest to us since they give us a measure of how well a model performs at predicting each connected foreground component in the image. A lot of these metrics are formalized and implemented in tha Panoptica library described in @kofler2023panoptica, which provides an algorithm that tries to match predicted instances to ground truth instances using an approximation algorithm. Once a match has been identified, metrics such as @assd or @cedi can be calculated on the pair of components.
+Instance-wise metrics are of particular interest to us since they give us a measure of how well a model performs at predicting each connected foreground component in the image. A lot of these metrics are formalized and implemented in tha Panoptica library described by Kofler et al. @kofler2023panoptica, which provides an algorithm that tries to match predicted instances to ground truth instances using an approximation algorithm. Once a match has been identified, metrics such as @assd or @cedi can be calculated on the pair of components.
+
+This is done by extending the notion of segmentaion error classification from pixels (as visualized in @figinstanceimbalance) to instances. An simplified overview of instance matching can be seen in @figinstancematching.
+
+Both precision precision (@eqprecision) and recall (@eqrecall) have instance-wise counterparts, with instance recall being of particular interest when considering multi-instance datasets in a medical setting. Instance recall computes the connected components on the predicted mas $hat(Y)$ and matches them to the connected components of $Y$, if a predicted instance has any overlap with a label instance (i.e. #box(inset: 0pt, rect(width: 0.8em, height: 0.8em, fill: class_colors.at(0), stroke: 0.1pt)) TP > 0), the label instance counts as recognized, otherwise it does not. If all label components have a matching predicted component, the instance recall is $1$, if half of them have a matching prediction, the value drops to $0.5$. Instance recall can be formalized as:
+
+$
+"recall"_"inst" = frac(|{I_k in I : exists i in I_k "such that" y_i = 1 and hat(y)_i = 1}|, K)
+$
+
+The label and prediction overlay in @figinstancematching would have an instance recall of $frac(2,3)$ due to 2 of the 3 label instances having matched counterparts.
+
+This can be extended by calculating instance recall by volume. As stated previously in @instance_imbalance, lesion size often has no direct correlation with clinical relevance in many pathologies, but models tend to miss smaller instances and focus on larger ones @kofler2023blobloss @bouteille2025learning. As such, quantifying how well a model can spot instances with lower volume can be especially important when this small instance could be a malignant tumor. Therefore, previous works have proposed instance recall by volume, where all connected components are partitioned into e.g. quartiles based on their volume and $"recall"_"inst"$ is computed on them separately, resulting in $("recall"_"inst"_"q1", "recall"_"inst"_"q2", "recall"_"inst"_"q3","recall"_"inst"_"q4")$
+
+This will give us a comparable measure how well small instances are recognized compared to larger ones.
+
+
+#figure(
+  grid(
+    columns: 1,
+    align: center + horizon,
+    image("../figures/instance_matching.png", width: 60%),
+  ),
+  caption: [Pixel-wise notions of #box(inset: 0pt, rect(width: 0.8em, height: 0.8em, fill: class_colors.at(0), stroke: 0.1pt)) TP, #box(inset: 0pt, rect(width: 0.8em, height: 0.8em, fill: class_colors.at(1), stroke: 0.1pt)) FN,  #box(inset: 0pt, rect(width: 0.8em, height: 0.8em, fill: class_colors.at(2), stroke: 0.1pt)) FP are extended to instances, with the left two instances being identified as TP instances ($"TP"_"inst"$), the top left being a false positive instance ($"FP"_"inst"$) as the model predicted a component not present in the label. The bottom right component is classified as an FN instance ($"FP"_"inst"$) due to the label showing a component without any overlapping prediction pixels.
+  ],
+) <figinstancematching>
 
 #todo("Clarify sq_assd, etc. Text suffices")
 
@@ -136,15 +184,23 @@ Instance-wise metrics are of particular interest to us since they give us a meas
 
 Instance F1, Instance Dice, CCDice, Instance Recall by volume
 
+Connected Component Dice Score is a metric introduced by Jaus et al. @jaus2025every that leverages voronoi regions $R$ computed on the labels $Y$ and seeded by the ground truth instances $I$. In an image, each voronoi region $R_k in R$ is considered separately by masking out everything outside the particular region, calculating the dice score ($F_1$) and averaging the scores across all regions:
+
+$
+  "CCDice"(Y, hat(Y)) = frac(sum_(k=1)^K F_1(Y inter R_k, hat(Y) inter R_k), K)
+$
+
+CCDice is of particular interest as a metric, as it incorporates the notion that all regions and their instances are equally important.
+
 == Loss Formulation and Weighted Combination<sec_loss_functions_method>
-This section provides a concrete formulation of the loss functions that were used and compared during the course of our experimentation, since there are many loss functions to choose from and the introduction of hyperparaters makes a complete comparrison untractable, we will limit ourselves to the most common losses.
+This section provides a concrete formulation of the loss functions that were used and compared during the course of our experimentation, since there are many loss functions to choose from and the introduction of hyperparaters makes a complete comparrison untractable, we will limit ourselves to the most common losses in medical image segmentation.
 
 $
   cal(L)_"Dice"=1-frac(2sum_(i=1)^N hat(y)_(i)y_i, sum_(i=1)^N (hat(y)_i^2+y_i^2))
 $
 
 $
-  cal(L)_"BCE"=-(y_i log hat(y)_i+(1-y_i) log(1-hat(y)_i))
+  cal(L)_"BCE"=-sum_(i=1)^N (y_i log hat(y)_i+(1-y_i) log(1-hat(y)_i))
 $
 
 $
@@ -174,33 +230,100 @@ $
 
 #todo("Budgets, unit tensor, etc. basics")
 ==== Inverse Weighting
+Inverse weighting maps $W_"iw"$ were introduced by Shirokikh et al. @shirokikh2020universal and are designed to address the instance-imbalance problem by assigning a significantly higher weight to pixels belonging to a foreground instance. The background is treated as an additional instance $I_0 in I$. Each pixel $w_i in W_"iw"$ is assigned a weight depending on the instance it is part of:
+$
+  w_i = frac(dots, dots)
+$
+This has the effect that the background as well as foreground instances, which typically comprise a much smaller fraction of the label compared to the background, all receive the same "budget" that is distributed among all the pixels within the instances.
+
+The hypothesis behind this map is that the model is punished harshly for missing foreground pixels, even more so if they belong to small instances.
+
+#figure(
+  grid(
+    align: center + horizon,
+    column-gutter: 0mm,
+    image("../figures/weight_maps/iw.png", width: 70%),
+  ),
+  caption: [
+  ],
+) <figiwmap>
 #todo("Formula, hypothesis, figure")
 ==== Equal Region Weights
+The equal region weights map $W_"v_region"$ is a naive way to equalize the weights around all instances, not just in the foreground pixels $I_i$, but also in the background pixels that belong to the same voronoi region $R_i$.
+
+$
+  w_i = frac(dots, dots)
+$
+#figure(
+  grid(
+    align: center + horizon,
+    column-gutter: 0mm,
+    image("../figures/weight_maps/v_region.png", width: 65%),
+  ),
+  caption: [
+  ],
+) <figvregionmap>
+
 #todo("Formula, hypothesis, figure")
-==== Region Proportion Weights
+==== Voronoi Inverse Weighting
+Voronoi inverse weighting maps $W_"v_iw"$ aim to combine the previous two concepts, assigning all regions equal budget and within them, dividing them evenly between the background and foreground pixels
+
+#figure(
+  grid(
+    align: center + horizon,
+    column-gutter: 0mm,
+    image("../figures/weight_maps/v_iw.png", width: 70%),
+  ),
+  caption: [
+  ],
+) <figviwmap>
 #todo("Formula, hypothesis, figure")
 ==== Voronoi Mountains
+
+#figure(
+  grid(
+    align: center + horizon,
+    column-gutter: 0mm,
+    image("../figures/weight_maps/v_mountains.png", width: 70%),
+  ),
+  caption: [
+  ],
+) <figviwmap>
 #todo("Formula, hypothesis, figure")
 ==== Voronoi Islands
+
+#figure(
+  grid(
+    align: center + horizon,
+    column-gutter: 0mm,
+    image("../figures/weight_maps/v_islands.png", width: 70%),
+  ),
+  caption: [
+  ],
+) <figviwmap>
 #todo("Formula, hypothesis, figure")
+==== Adaptive Voronoi Weighting
+#todo("Formula, hypothesis, figure")
+
 === Weighted Losses
-Any of the above discussed weight maps can be easily incorporated into arbitrary loss functions. The loss functions discussed in @sec_loss_functions_method can be adapted into their weighted counterparts as follows:
+Any of the above discussed weight maps can be easily incorporated into arbitrary loss functions. The loss functions discussed in @sec_loss_functions_method can be adapted into their weighted counterparts as follows with $w_i$ being the weight value voxel of the weight map at the same location as $y_i$ and $hat(y)_i$ in the label and prediction respectively:
 
 $
   cal(L)_"Dice"_w=1-frac(2 sum_(i=1)^N w_i hat(y)_(i)y_i, sum_(i=1)^N w_i (hat(y)_i^2+y_i^2))
 $
 
 $
-  cal(L)_"BCE"_w=-w_i (y_i log hat(y)_i+(1-y_i) log(1-hat(y)_i))
+  cal(L)_"BCE"_w=-sum_(i=1)^(N) w_i (y_i log hat(y)_i+(1-y_i) log(1-hat(y)_i))
 $
 
 $
-  cal(L)_"Tversky"_w (alpha, beta)=1-frac(sum_(i=1)^N hat(y)_i y_i, sum_(i=1)^N hat(y)_i y_i + alpha sum_(i=1)^N hat(y)_i (1-y_i) + beta sum_(i=1)^N (1-hat(y)_i) y_i)
+  cal(L)_"Tversky"_w (alpha, beta)=1-frac(sum_(i=1)^N w_i hat(y)_i y_i, sum_(i=1)^N w_i hat(y)_i y_i + alpha sum_(i=1)^N w_i hat(y)_i (1-y_i) + beta sum_(i=1)^N w_i (1-hat(y)_i) y_i)
 $
 
 == Model Architecture<sec_modelarchitecture>
 This section describes the technical setup used in the construction of the training pipeline, the architecture of the adaptive neural network used in experiments, etc.
 === Adaptive U-Net
+
 #todo("A description of a somewhat adaptive UNet that can handle 2D and 3D data")
 === Precomputation and Image Patching
 #todo("Instance information, voronoi maps, and weight maps can be precomputed and patched alongside images and labels.")
