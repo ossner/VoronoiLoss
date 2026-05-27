@@ -32,6 +32,7 @@ from monai.optimizers import WarmupCosineSchedule
 from util import get_data_dicts, split_gt_by_volume, to_serializable, configure_datasets, save_as_nifti, save_2d_as_png
 import statistics
 from PIL import Image
+import nibabel as nib
 from LossWrapper import WeightedLossWrapper
 from lightning.pytorch.utilities import grad_norm
 from torchmetrics.classification import BinaryPrecision, BinaryRecall, BinaryFBetaScore
@@ -325,7 +326,6 @@ class InstanceSegmentationModel(pl.LightningModule):
         # image = images.cpu().numpy().squeeze()
         preds = preds.cpu().numpy().squeeze()
         labels = labels.cpu().numpy().squeeze()
-        
         if len(preds.shape) == 2:
             preds_img = (preds * 255).astype(np.uint8)
 
@@ -336,11 +336,23 @@ class InstanceSegmentationModel(pl.LightningModule):
             preds_img = np.rot90(preds_img, k=-1)
             im = Image.fromarray(preds_img)
             im.save(f'{self.logger.log_dir}/preds/{casename}.png')
-
-        self.aggregator.evaluate(preds, labels, subject_name=casename)
-        if preds.ndim == 2:
+            
             preds = preds[None, ...]
             labels = labels[None, ...]
+        else:
+            preds_vol = preds.astype(np.uint8)
+            labels_vol = labels.astype(np.uint8)
+
+            # Save as NIfTI (.nii.gz)
+            pred_nifti = nib.Nifti1Image(preds_vol, affine=np.eye(4))
+            label_nifti = nib.Nifti1Image(labels_vol, affine=np.eye(4))
+
+            nib.save(
+                pred_nifti,
+                f'{self.logger.log_dir}/preds/{casename}.nii.gz'
+            )
+
+        self.aggregator.evaluate(preds, labels, subject_name=casename)
 
         B, C = 1, 2
         D, H, W = preds.shape
