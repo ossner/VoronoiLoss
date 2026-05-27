@@ -116,25 +116,31 @@ def run_train(args):
 
 def run_eval(args):
     """Iterates through checkpoints for evaluation."""
-    for loss_variant in args.losses:
-        for task in args.tasks:
-            for w_map in args.weight_maps:
+    for dataset in args.datasets:
+        for w_map in args.weight_maps:
+            for losses in args.losses:
+                dataset_config = DATASET_CONFIGS[dataset]
+                dataset_config['cache'] = 0 # set cache to 0 so we don't load things into train and val loaders
                 print(
-                    f"\nEvaluating | Loss: {loss_variant} | Task: {task} | Map: {w_map}")
+                    f"\nEvaluating | Loss: {losses} | Dataset: {dataset} | Map: {w_map}")
 
-                ckpt_path = f"{args.log_dir}/{loss_variant}/{args.dataset}_{task}/{w_map}/version_0/checkpoints/final.ckpt"
+                ckpt_path = f"{args.log_dir}/{losses}/{dataset}/{w_map}/version_0/checkpoints/final.ckpt"
 
                 logger = TensorBoardLogger(
-                    save_dir='src/twod/eval/logs',
-                    name=f"{loss_variant}/{args.dataset}_{task}/{w_map}",
+                    save_dir=f'{args.log_dir}/{losses}/{dataset}/{w_map}/version_0',
+                    name=f"eval",
                     default_hp_metric=False
                 )
 
                 try:
                     model = InstanceSegmentationModel.load_from_checkpoint(
                         ckpt_path,
-                        data_dir=f'data/datasets/{args.dataset}',
-                        task=task,
+                        data_dir=f'data/datasets/',
+                        dataset_config = dataset_config,
+                        loss_dict=(build_loss_dict(losses)),
+                        weight_map=w_map,
+                        lr=args.lr,
+                        seed=args.seed,
                         weights_only=False
                     )
 

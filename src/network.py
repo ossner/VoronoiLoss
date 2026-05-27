@@ -14,6 +14,7 @@ from monai.transforms import (
     RandRotate90d,
     EnsureTyped,
     RandZoomd,
+    CopyItemsd,
     RandGaussianNoised,
     RandGaussianSmoothd,
     Lambdad,
@@ -120,6 +121,7 @@ class InstanceSegmentationModel(pl.LightningModule):
         ]
 
         base_transforms = [
+            CopyItemsd(keys=['label'], times=1, names=['label_path']),
             LoadImaged(keys=['image', 'label']),
             EnsureChannelFirstd(keys=["image", "label"]),
             DivisiblePadd(keys=["image", "label"], k=16),
@@ -255,7 +257,7 @@ class InstanceSegmentationModel(pl.LightningModule):
                     save_as_nifti(batch["voronoi"], f"{self.logger.log_dir}/val_sample_0/voronoi.nii.gz")
                     save_as_nifti(batch['weight_map'], f"{self.logger.log_dir}/val_sample_0/weight_map.nii.gz")
                 elif self.adaptive:
-                    weight_map = self.loss_function.adapt_weight_map(y_pred=outputs, batch=batch)['weight_map'] if self.adaptive else batch['weight_map']
+                    weight_map = self.loss_function.adapt_weight_map_budget(y_pred=outputs, batch=batch)['weight_map'] if self.adaptive else batch['weight_map']
                     save_as_nifti(weight_map, f"{self.logger.log_dir}/val_sample_0/weight_map.nii.gz")
                 save_as_nifti(preds, f"{self.logger.log_dir}/val_sample_0/preds.nii.gz")
             else:
@@ -265,7 +267,7 @@ class InstanceSegmentationModel(pl.LightningModule):
                     save_2d_as_png(batch["voronoi"], f"{self.logger.log_dir}/val_sample_0/voronoi")
                     save_2d_as_png(batch['weight_map'], f"{self.logger.log_dir}/val_sample_0/weight_map")
                 elif self.adaptive:
-                    weight_map = self.loss_function.adapt_weight_map(y_pred=outputs, batch=batch)['weight_map'] if self.adaptive else batch['weight_map']
+                    weight_map = self.loss_function.adapt_weight_map_budget(y_pred=outputs, batch=batch)['weight_map'] if self.adaptive else batch['weight_map']
                     save_2d_as_png(weight_map, f"{self.logger.log_dir}/val_sample_0/weight_map")
                 save_2d_as_png(preds, f"{self.logger.log_dir}/val_sample_0/preds")
                 
@@ -306,21 +308,36 @@ class InstanceSegmentationModel(pl.LightningModule):
         }
         self.aggregator = Panoptica_Aggregator(
             panoptica_evaluator=self.evaluator, output_file=f'{self.logger.log_dir}/eval.tsv')
+        os.makedirs(f'{self.logger.log_dir}/preds/')
 
     def test_step(self, batch, batch_idx):
+        casename = os.path.basename(batch['label_path'][0]).split('.')[0]
         images, labels = batch["image"], batch["label"]
         outputs = self.forward(images)
         preds = self.post_trans(outputs)
+        print(casename)
 
+        # Calculate global metrics
         self.recall(preds, labels)
         self.precision(preds, labels)
         self.f2(preds, labels)
 
-        image = images.cpu().numpy().squeeze()
+        # image = images.cpu().numpy().squeeze()
         preds = preds.cpu().numpy().squeeze()
         labels = labels.cpu().numpy().squeeze()
+        
+        if len(preds.shape) == 2:
+            preds_img = (preds * 255).astype(np.uint8)
 
-        self.aggregator.evaluate(preds, labels, batch_idx)
+            # Mirror horizontally
+            preds_img = np.flipud(preds_img)
+
+            # Rotate 90° clockwise
+            preds_img = np.rot90(preds_img, k=-1)
+            im = Image.fromarray(preds_img)
+            im.save(f'{self.logger.log_dir}/preds/{casename}.png')
+
+        self.aggregator.evaluate(preds, labels, subject_name=casename)
         if preds.ndim == 2:
             preds = preds[None, ...]
             labels = labels[None, ...]
@@ -388,5 +405,5 @@ class InstanceSegmentationModel(pl.LightningModule):
             json.dump(metrics_to_log, fp, indent=2)
         self.log_dict(metrics_to_log)
 
-        print(f"\nTest Results for {self.task}_{self.hparams.weight_map}:")
+        print(f"\nTest Results for {self.dataset_config}:")
         statistics_obj.print_summary(3, only_across_groups=False)
