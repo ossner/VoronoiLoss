@@ -77,6 +77,7 @@ class InstanceSegmentationModel(pl.LightningModule):
         self.evaluator = Panoptica_Evaluator.load_from_config(
             "src/eval/panoptica_config.yaml")
         self.instance_f1 = []
+        self.instance_precision = []
         self.instance_recall = []
         self.instance_dice = []
         self.lr = lr
@@ -187,9 +188,6 @@ class InstanceSegmentationModel(pl.LightningModule):
 
         loss = self.loss_function(outputs, batch)
 
-        preds_list = [self.post_trans(i) for i in decollate_batch(outputs)]
-        labels_list = decollate_batch(batch["label"])
-        self.dice(y_pred=preds_list, y=labels_list)
         self.log("train/loss", loss, on_epoch=True,
                  on_step=False, prog_bar=True, batch_size=self.dataset_config['batch_size'])
         self.log("train/lr", self.optimizers(
@@ -227,14 +225,17 @@ class InstanceSegmentationModel(pl.LightningModule):
                 self.instance_f1.append(panoptica_metrics.rq)
                 self.instance_recall.append(panoptica_metrics.rec)
                 self.instance_dice.append(panoptica_metrics.sq_dsc)
+                self.instance_precision.append(panoptica_metrics.prec)
             except:
                 self.instance_f1.append(0.5)
                 self.instance_recall.append(0.5)
                 self.instance_dice.append(0.5)
+                self.instance_precision.append(0.5)
         else:
             self.instance_f1.append(0.5)
             self.instance_recall.append(0.5)
             self.instance_dice.append(0.5)
+            self.instance_precision.append(0.5)
         if preds_np.ndim == 2:
             preds_np = preds_np[None, ...]
             labels_np = labels_np[None, ...]
@@ -286,6 +287,9 @@ class InstanceSegmentationModel(pl.LightningModule):
         self.log("val/instance_dice",
                  statistics.mean(self.instance_dice), prog_bar=False, sync_dist=True)
         self.instance_dice = []
+        self.log("val/instance_precision",
+                 statistics.mean(self.instance_precision), prog_bar=False, sync_dist=True)
+        self.instance_precision = []
         self.log("val/ccdice",
                  self.cc_dice.cc_aggregate().mean().item(), on_epoch=True, sync_dist=True)
         self.cc_dice.reset()
