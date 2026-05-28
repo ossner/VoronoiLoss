@@ -191,9 +191,9 @@ class InstanceSegmentationModel(pl.LightningModule):
         labels_list = decollate_batch(batch["label"])
         self.dice(y_pred=preds_list, y=labels_list)
         self.log("train/loss", loss, on_epoch=True,
-                 on_step=False, prog_bar=True)
+                 on_step=False, prog_bar=True, batch_size=self.dataset_config['batch_size'])
         self.log("train/lr", self.optimizers(
-        ).param_groups[0]["lr"], on_step=False, on_epoch=True)
+        ).param_groups[0]["lr"], on_step=False, on_epoch=True, batch_size=self.dataset_config['batch_size'])
         return loss
 
     def on_before_optimizer_step(self, optimizer):
@@ -213,7 +213,7 @@ class InstanceSegmentationModel(pl.LightningModule):
 
         val_loss = self.loss_function(outputs, batch)
         self.log("val/loss", val_loss, on_epoch=True,
-                 on_step=False, batch_size=images.shape[0])
+                 on_step=False)
         self.log("val/precision", self.precision, on_epoch=True)
         self.log("val/recall", self.recall, on_epoch=True)
         self.log("val/f2", self.f2, on_epoch=True)
