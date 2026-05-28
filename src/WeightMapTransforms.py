@@ -36,7 +36,6 @@ class ComputeWeightMapsd(MapTransform):
 
             # Instantiate map as unit tensor
             map = np.ones_like(inst_np, dtype=np.float32)
-            map2 = np.ones_like(inst_np, dtype=np.float32)
 
             # The overall budget that can be distributed (B)
             total_budget = inst_np.size
@@ -72,10 +71,6 @@ class ComputeWeightMapsd(MapTransform):
                 elif self.concept == 'v_adaptive':
                     alpha = 0.5
                     map[vor_mask] = region_budget / area_vor
-                    map2[inst_mask] = alpha * \
-                        region_budget / area_inst
-                    map2[bg_mask] = (
-                        1-alpha) * region_budget / area_bg
                 elif self.concept == 'v_mountains':
                     sigma = self.mountain_sigma * np.sqrt(area_inst / np.pi)
                     # Lower bound to prevent division by zero
@@ -106,10 +101,7 @@ class ComputeWeightMapsd(MapTransform):
             assert total_delta < (
                 1e-5 * unit_sum), f"Sum over weight map {self.concept} not within range of unit tensor, difference: {total_delta}"
             map = torch.from_numpy(map[None, ...])
-            map2 = torch.from_numpy(map2[None, ...])
             if torch.is_tensor(instances):
                 map = map.to(instances.device)
-                map2 = map2.to(instances.device)
             d['weight_map'] = map
-            d['v_iw'] = map2
         return d
