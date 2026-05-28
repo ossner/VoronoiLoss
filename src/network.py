@@ -45,6 +45,7 @@ class InstanceSegmentationModel(pl.LightningModule):
     def __init__(self, data_dir, dataset_config, loss_dict, weight_map, lr, seed, adaptive=True):
         super().__init__()
         set_determinism(seed=seed)
+        # Initialize adaptive Unet that changes dimensions and channels based on the data
         self.model = UNet(
             spatial_dims=dataset_config['dimensions'],
             in_channels=dataset_config['channels'],
@@ -55,7 +56,7 @@ class InstanceSegmentationModel(pl.LightningModule):
             norm=Norm.BATCH,
         )
         self.adaptive = adaptive
-        self.loss_function = WeightedLossWrapper(loss_dict=loss_dict, adaptive=self.adaptive)
+        self.loss_function = WeightedLossWrapper(loss_dict=loss_dict, adaptive=self.adaptive) # Intialize losses with relative weights as specified
         self.weight_map = weight_map
         self.dice = DiceMetric(
             include_background=True,
@@ -91,14 +92,13 @@ class InstanceSegmentationModel(pl.LightningModule):
     def prepare_data(self):
         # All keys for monai transforms that need to me spatially augmented together
         SPATIAL_KEYS = [
-            "image", "label", "voronoi", "weight_map", 'v_iw', "instances"
+            "image", "label", "voronoi", "weight_map", "instances"
         ]
         MODES = [
             "bilinear",  # image
             "nearest",   # label
             "nearest",   # voronoi
             "bilinear",  # weight_map
-            "bilinear",  # v_iw if adaptive, else all 1
             "nearest",   # instances
         ]
 
@@ -219,7 +219,7 @@ class InstanceSegmentationModel(pl.LightningModule):
         self.log("val/f2", self.f2, on_epoch=True)
 
         preds_np = preds.detach().cpu().numpy().squeeze()
-        labels_np = batch['label'].detach().cpu().numpy().squeeze()
+        labels_np = labels.detach().cpu().numpy().squeeze()
         if self.current_epoch > (self.trainer.max_epochs * 0.05):  # Panoptica instance wise needs a while before it can be applied due to instability early
             try:
                 panoptica_metrics = self.evaluator.evaluate(
@@ -374,13 +374,7 @@ class InstanceSegmentationModel(pl.LightningModule):
                 preds, gt_q, log_times=False, verbose=False)['instance'].rec)
 
     def on_test_epoch_end(self):
-        precision = self.precision.compute()
-        f2 = self.f2.compute()
-        recall = self.recall.compute()
-        dice = self.dice.aggregate().item()
-
-        statistics_obj = Panoptica_Statistic.from_file(
-            f'{self.logger.log_dir}/eval.tsv')
+        statistics_obj = Panoptica_Statistic.from_file(f'{self.logger.log_dir}/eval.tsv')
         summary = statistics_obj.get_summary_dict(
             include_across_group=False)['instance']
         mean_quartile_recall = {}
@@ -393,24 +387,24 @@ class InstanceSegmentationModel(pl.LightningModule):
                 mean_quartile_recall[q] = np.mean(values)
 
         metrics_to_log = {
-            "test/global/dice":      dice,
-            "test/global/precision": precision,
-            "test/global/recall":    recall,
-            "test/global/F2":    f2,
-            "test/cc/dice":    self.cc_dice.cc_aggregate().mean().item(),
-            "test/instance/dice":      summary['sq_dsc'].avg,
-            "test/instance/tp":        summary['tp'].avg,
-            "test/instance/fp":        summary['fp'].avg,
-            "test/instance/fn":        summary['fn'].avg,
-            "test/instance/precision": summary['prec'].avg,
+            "test/global/dice":           self.dice.aggregate().item(),
+            "test/global/precision":      self.precision.compute(),
+            "test/global/recall":         self.recall.compute(),
+            "test/global/F2":             self.f2.compute(),
+            "test/cc/dice":               self.cc_dice.cc_aggregate().mean().item(),
+            "test/instance/dice":         summary['sq_dsc'].avg,
+            "test/instance/tp":           summary['tp'].avg,
+            "test/instance/fp":           summary['fp'].avg,
+            "test/instance/fn":           summary['fn'].avg,
+            "test/instance/precision":    summary['prec'].avg,
             "test/instance/recall_q0":    mean_quartile_recall['q0'],
             "test/instance/recall_q1":    mean_quartile_recall['q1'],
             "test/instance/recall_q2":    mean_quartile_recall['q2'],
             "test/instance/recall_q3":    mean_quartile_recall['q3'],
-            "test/instance/recall":    summary['rec'].avg,
-            "test/instance/f1":         summary['rq'].avg,
-            "test/instance/assd":      summary['sq_assd'].avg,
-            "test/instance/cedi":      summary['sq_cedi'].avg,
+            "test/instance/recall":       summary['rec'].avg,
+            "test/instance/f1":           summary['rq'].avg,
+            "test/instance/assd":         summary['sq_assd'].avg,
+            "test/instance/cedi":         summary['sq_cedi'].avg,
         }
         metrics_to_log = to_serializable(metrics_to_log)
 
@@ -420,3 +414,10 @@ class InstanceSegmentationModel(pl.LightningModule):
 
         print(f"\nTest Results for {self.dataset_config}:")
         statistics_obj.print_summary(3, only_across_groups=False)
+        # Reset metrics again just to be safe
+        self.recall.reset()
+        self.precision.reset()
+        self.cc_dice.reset()
+        self.dice.reset()
+        self.f2.reset()
+
