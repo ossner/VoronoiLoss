@@ -201,19 +201,21 @@ class InstanceSegmentationModel(pl.LightningModule):
         self.log_dict(total_grad_norm)
 
     def validation_step(self, batch, batch_idx):
-        images = batch["image"]
+        images, labels = batch["image"], batch["label"]
         outputs = self(images)
         preds = self.post_trans(outputs)
 
-        self.dice(y_pred=preds, y=batch["label"])
+        # Calculate global metrics
+        self.recall(preds, labels)
+        self.precision(preds, labels)
+        self.f2(preds, labels)
+        self.dice(preds, labels)
+
         val_loss = self.loss_function(outputs, batch)
         self.log("val/loss", val_loss, on_epoch=True,
                  on_step=False, batch_size=images.shape[0])
-        self.precision(preds, batch["label"])
         self.log("val/precision", self.precision, on_epoch=True)
-        self.recall(preds, batch["label"])
         self.log("val/recall", self.recall, on_epoch=True)
-        self.f2(preds, batch["label"])
         self.log("val/f2", self.f2, on_epoch=True)
 
         preds_np = preds.detach().cpu().numpy().squeeze()
@@ -276,21 +278,21 @@ class InstanceSegmentationModel(pl.LightningModule):
 
     def on_validation_epoch_end(self):
         self.log("val/instance_f1",
-                 statistics.mean(self.instance_f1), prog_bar=False)
+                 statistics.mean(self.instance_f1), prog_bar=False, sync_dist=True)
         self.instance_f1 = []
         self.log("val/instance_recall",
-                 statistics.mean(self.instance_recall), prog_bar=False)
+                 statistics.mean(self.instance_recall), prog_bar=False, sync_dist=True)
         self.instance_recall = []
         self.log("val/instance_dice",
-                 statistics.mean(self.instance_dice), prog_bar=False)
+                 statistics.mean(self.instance_dice), prog_bar=False, sync_dist=True)
         self.instance_dice = []
         self.log("val/ccdice",
-                 self.cc_dice.cc_aggregate().mean().item(), on_epoch=True)
+                 self.cc_dice.cc_aggregate().mean().item(), on_epoch=True, sync_dist=True)
         self.cc_dice.reset()
-        self.log(
-            "val/dice", self.dice.aggregate(reduction='mean').item(), prog_bar=True)
+        val_dice = self.dice.aggregate().item()
+        self.log("val/dice", val_dice, prog_bar=True, sync_dist=True)
         self.dice.reset()
-
+        
     def on_fit_end(self):
         self.logger.log_hyperparams(
             params=dict(self.hparams)
@@ -300,6 +302,7 @@ class InstanceSegmentationModel(pl.LightningModule):
         self.recall.reset()
         self.precision.reset()
         self.cc_dice.reset()
+        self.dice.reset()
         self.f2.reset()
         self.quartile_recalls = {
             "q0": [],
@@ -314,14 +317,14 @@ class InstanceSegmentationModel(pl.LightningModule):
     def test_step(self, batch, batch_idx):
         casename = os.path.basename(batch['label_path'][0]).split('.')[0]
         images, labels = batch["image"], batch["label"]
-        outputs = self.forward(images)
+        outputs = self(images)
         preds = self.post_trans(outputs)
-        print(casename)
 
         # Calculate global metrics
         self.recall(preds, labels)
         self.precision(preds, labels)
         self.f2(preds, labels)
+        self.dice(preds, labels)
 
         # image = images.cpu().numpy().squeeze()
         preds = preds.cpu().numpy().squeeze()
@@ -329,6 +332,7 @@ class InstanceSegmentationModel(pl.LightningModule):
         if len(preds.shape) == 2:
             preds_img = (preds * 255).astype(np.uint8)
 
+            # 2D images in MONAI need to be mirrored and flipped due to how they are loaded
             # Mirror horizontally
             preds_img = np.flipud(preds_img)
 
@@ -341,11 +345,7 @@ class InstanceSegmentationModel(pl.LightningModule):
             labels = labels[None, ...]
         else:
             preds_vol = preds.astype(np.uint8)
-            labels_vol = labels.astype(np.uint8)
-
-            # Save as NIfTI (.nii.gz)
             pred_nifti = nib.Nifti1Image(preds_vol, affine=np.eye(4))
-            label_nifti = nib.Nifti1Image(labels_vol, affine=np.eye(4))
 
             nib.save(
                 pred_nifti,
@@ -377,6 +377,7 @@ class InstanceSegmentationModel(pl.LightningModule):
         precision = self.precision.compute()
         f2 = self.f2.compute()
         recall = self.recall.compute()
+        dice = self.dice.aggregate().item()
 
         statistics_obj = Panoptica_Statistic.from_file(
             f'{self.logger.log_dir}/eval.tsv')
@@ -392,7 +393,7 @@ class InstanceSegmentationModel(pl.LightningModule):
                 mean_quartile_recall[q] = np.mean(values)
 
         metrics_to_log = {
-            "test/global/dice":      summary['global_bin_dsc'].avg,
+            "test/global/dice":      dice,
             "test/global/precision": precision,
             "test/global/recall":    recall,
             "test/global/F2":    f2,
