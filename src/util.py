@@ -103,7 +103,7 @@ DATASET_CONFIGS = {
         'patches': 20,
         'cache': 0,
         'label': 1,
-        'quartiles' : [13,29,83.5],
+        'quartiles' : [13,29,84],
     },
     'wmh_wmh': {
         'superset': 'wmh',
@@ -116,7 +116,7 @@ DATASET_CONFIGS = {
         'patches': 16,
         'cache': 1,
         'label': 1,
-        'quartiles' : [3,5,14],
+        'quartiles' : [3,5,13],
     }
 }
 
