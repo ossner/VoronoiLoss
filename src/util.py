@@ -49,7 +49,7 @@ DATASET_CONFIGS = {
         'epochs': 300,
         'roi': (512, 512),
         'patches': 16,
-        'cache': 0.25,
+        'cache': 1,
         'label': 255,
         'quartiles' : [1393.25, 2265, 3737.5],
     },
@@ -64,7 +64,7 @@ DATASET_CONFIGS = {
         'patches': 25,
         'cache': 1.0,
         'label': 255,
-        'quartiles': [460, 881, 1426.5],
+        'quartiles': [478, 901, 1440],
     },
     'plateletclean_cv': {
         'superset': 'platelet',
@@ -77,7 +77,7 @@ DATASET_CONFIGS = {
         'patches': 25,
         'cache': 1.0,
         'label': 255,
-        'quartiles': [160, 271, 451.75],
+        'quartiles': [165, 274, 456],
     },
     'epflclean_mit': {
         'superset': 'epfl',
@@ -90,7 +90,7 @@ DATASET_CONFIGS = {
         'patches': 16,
         'cache': 0.25,
         'label': 255,
-        'quartiles': [1393.25, 2265, 3737.5],
+        'quartiles': [1412, 2274, 3758],
     },
     'sbm_mets': {
         'superset': 'sbm',
