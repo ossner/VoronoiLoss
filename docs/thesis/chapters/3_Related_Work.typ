@@ -47,8 +47,6 @@ These recent research directions can extend the taxonomy proposed in @ma2021loss
 Instance-aware loss functions can provide both a flexible paradigm (e.g. in the case of $cal(L)_"blob"$) as well as concrete instance-based learning signals (as is the case in @rachmadi2024family).
 
 == Weight Maps <sec_weight_maps>
-#todo([Do I need to introduce these in @chapter_background?])
-
 Shirokikh et al. @shirokikh2020universal introduced connected-components-based weight maps to address the instance-imbalance problem. Weight maps can be precomupted based on the labels and applied during loss calculation to change the contribution of individual voxels to the final loss value. In their proposed @iw approach, the weight map is calculated by equally distributing a fixed budget corresponding to the number of voxels in the image across all connected components as well as the background.
 
 This results in an increased weight in smaller lesions compared to larger ones, but generally also results in the background voxels being assigned a much lower weight as the budget needs to be distributed across a significantly larger area. When compared to blob loss, however, @iw is unable to improve segmentation results @kofler2023blobloss. @iw nevertheless provides a concrete example of how a weight map can be used to address specific shortcomings of segmentation networks.

@@ -1,5 +1,10 @@
 #import "../utils.typ": todo
-= Results <results>
+= Results <sec_results>
+
+== Loss Combinations <sec_losscombinations>
+
+== Weight Maps <sec_weightmaps_results>
+
 #todo("An instance-based analysis of segmentation, analyse instance metadata like morphology and voronoi regions in results")
 
 #todo("Dataset noise and coeff. of covariance per dataset and how the random seed in deterministic training influences results")

@@ -35,7 +35,7 @@
   examiner: "Prof. Dr. Daniel Rückert",
   supervisors: ("Hendrik Möller",),
   author: "Sebastian Oßner",
-  title-en: "Addressing Volumetric Bias in Multi-Instance Semantic Segmentation Using Voronoi Tesselation",
+  title-en: "Addressing Volumetric Bias in Multi-Instance Semantic Segmentation Using Voronoi Tessellation",
   title-de: "Adressierung volumetrischer Befangenheit in Multi-Instanz-Semantischer Segmentierung durch Voronoi-Tessellation",
   abstract-text: [
    TODO: Make this left-aligned instead of

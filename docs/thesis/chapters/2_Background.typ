@@ -87,7 +87,7 @@ $
 $<eq_weightmap>
 In order to keep the total loss magnitude theoretically consistent, a constraint is applied to ensure the sum of the weight map is equalized to the number of voxels in the image:
 $
-  sum_(i=1)^(N) w_i in W = sum_(i=1)^(N) 1
+  sum_(w in W) w = N
 $
 Weight maps allow for biases to be manually introduced to the loss calculation, punishing the model more if it mis-identifies important areas of the image. A concrete formulation of several weight maps and how they are applied to different loss functions is proposed in @sec_weight_maps_method.
 
