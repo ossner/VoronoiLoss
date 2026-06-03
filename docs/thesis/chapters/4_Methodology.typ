@@ -20,15 +20,12 @@ Adhering to current methods and standards, all datasets have been partitioned in
 All statistics were calculated on the train and val set only to remain agnostic to the test set.
 
 === On Statistics and Fidelity of Multi-Instance Segmantation Datasets <dataset_fidelity>
-#todo("Perhaps split this into statistics description and reasoning and later fidelity")
 Since this thesis concerns binary semantic segmentation, all datasets can be abstracted into their constituent components as follows:
 An image of shape $(n_x,n_y)$ ($(n_x,n_y,n_z)$ in the case of 3D) and a binarized label $Y$ of the same shape for each image.
 
 As introduced in @sec_connectedcomponents, the binary label file can be used to calculate sptially connected instances $I$ using a neighborhood parameter, in this work 2D connected component analysis exclusively used 8-connectivity, whereas 3D connected components used 26-connectivity (see @figneighborhood for a visual interpretation of these neighborhood parameters).
 
-The resulting instances have inherent properties that are important to examine, both when formulating hypotheses, as well as investigating noise and segmentation errors. As these properties are of such importance, prior works in the field have provided comprehensive frameworks for identifying the properties of segmentation masks and how these impact performance reporting @kofler2023panoptica @maier2022metrics. While these works place their focus on the selection and calculation of quantitative segmentation metrics, this section aims to simply describe the attributes of the instances within datasets.
-
-It furthermore analyzes probable annotation errors and how the inclusion of those errors can skew behaviors of instance-aware segmentation implementations.
+The resulting instances have inherent properties that are important to examine, both when formulating hypotheses, as well as investigating noise and segmentation errors. As these properties are of such importance, prior works in the field have provided comprehensive frameworks for identifying the properties of segmentation masks and how these impact performance reporting @kofler2023panoptica @maier2022metrics. While these works place their focus on the selection and calculation of quantitative segmentation metrics, this section aims to simply describe the attributes of the instances within datasets in order to aid in the interpretation of results.
 
 === Brain Metastases
 The Stanford brainmetshare dataset (@mets:short) @brainmetshare consists of 105 labeled MRI scans with multiple co-registered channels of the human head, with binary labels indicating metastatic cancer lesions. The dataset has been randomly split into (train, validation, test) sets with proportions $(0.7, 0.15, 0.15)$ respectively.
@@ -286,20 +283,35 @@ $
 $
 Tversky loss includes hyperparameters $alpha, beta$ that serve to control the punishment of pixels classified as @fp and @fn respectively @salehi2017tversky. The higher $alpha$, the more conservative the model's predictions, 
 
-#todo(
-  "Tested Losses, Global vs. Local splits and weight distribution and normalization as potential shortcombing of previous studies",
-)
-
-Why does everyone combine local and global losses?
-
 === Voronoi-based Region Wise Loss <voronoi_loss>
-We define a voronoi-based loss similarly to CC-Loss introduced by Bouteille et al. @bouteille2025learning as the average 
+We define a Voronoi-based loss similarly to CC-Loss introduced by Bouteille et al. @bouteille2025learning as the average region-wise loss across all Voronoi regions $R$ using an arbitrary loss function $cal(L)$:
 
 $
-  cal(L)_"CC" = alpha * cal(L)_"global" + beta * cal(L)_"region"
-$
+  cal(L)_"Voronoi" (Y,hat(Y)) =sum_(R_k in R) frac(cal(L)(Y inter R_k, hat(Y) inter R_k),K)
+$<eqvoronoiloss>
 
-with the global loss, being an arbitrary loss function operating on the entire image, $cal(L)_"region"$
+@figvoronoiloss shows the process on a label with $K=3$. The labels and predictions from each region are passed to the loss function and their signals are averaged.
+
+#figure(
+  grid(
+    columns: 1,
+    align: center + horizon,
+    image("../figures/VoronoiLoss.png", width: 85%),
+  ),
+  caption: [An example of Voronoi-based region-wise loss. The labels $Y$ and their connected components are used to compute the Voronoi regions $R$. The labels and the predicted segmentation from the model $hat(Y)$ are then masked using the regions and the region-wise loss is averaged across them.
+  ],
+) <figvoronoiloss>
+
+As in the previously introduced instance-aware loss functions, $cal(L)_"Voronoi"$ is combined with a global loss in a weighted formula where the weights $alpha$ and $beta$ scale the relative importance of the global- and region-wise components:
+
+$
+  cal(L)_"total" = alpha * cal(L)_"global" + beta * cal(L)_"Voronoi"
+$<eqtotalloss>
+
+In this work, we examine several combinations of weights as well as several different loss functions for both $cal(L)_"global"$ and $cal(L)_"Voronoi"$. During those experiments, it is crucial that the total loss magnitude is kept consistent, in order to avoid implicit scaling of the learning rate @kofler2023blobloss. For this, $alpha$ and $beta$ are normalized in the following fashion:
+$
+  alpha = frac(alpha, alpha + beta), beta = frac(beta, alpha + beta)
+$
 
 === Weight Maps <sec_weight_maps_method>
 Weight maps, as previously described in @sec_weight_maps_bg, provide a way to emphasize different aspects of the segmentation based on the ground truth labels, they can be precomputed and are therefore an efficient way to introduce assumptions and address computational biases.
@@ -371,8 +383,8 @@ Voronoi inverse weighting maps $W_"v_iw"$ aim to combine the concept of inverse 
 
 $
 w_n = cases(
-  frac(N,2K|R_k|-|I_k|) quad quad  "if" y_n in R_k and y_n = 0, 
-  frac(N,2K|I_k|) quad quad  quad quad  "if" y_n in R_k and y_n = 1
+  frac(N,2K|R_k|-|I_k|) quad quad  "if" y_n in R_k "and" y_n = 0, 
+  frac(N,2K|I_k|) quad quad  quad quad  "if" y_n in R_k "and" y_n = 1
 )
 $<eqviw>
 
@@ -391,12 +403,18 @@ This aims to be a less aggressive and more equalized approach than @iw and altho
 ) <figviwmap>
 
 ==== Voronoi Mountains
+The Voronoi mountains map $W_"v_mountains"$ utilizes the euclidean distance function $"dist"$ which returns the distance from a given pixel to the surface of an instance. Furthermore a hyperparameter $sigma_m$ scales an exponential weight decay as distance to an instance increases. For any region $R_k$, this gives rise to $S_k = sum_(j in R_k \\ I_k) exp(-"dist"(j, I_k)/sigma_m)$, the sum of background decay in the region. This is used in the construction of each weight map pixel:
+
 $
 w_n = cases(
-  dots quad quad  "if" y_n in R_k and y_n = 0, 
-  dots  quad quad  "if" y_n in R_k and y_n = 1
+frac(N, K(|I_k| + S_k)) * exp(-"dist"(n, I_k) / sigma_m) quad quad &"if" n in R_k "and" y_n = 0,
+frac(N, K(|I_k| + S_k)) quad quad &"if" n in R_k "and" y_n = 1
 )
 $<eqvmountains>
+
+@figvmountainsmap Shows a sample of such a weight map, the high instance weights and the decaying weight that increases with distance can be intuitively visualized topographically and takes on a shape akin to a mountain range.
+
+$W_"v_mountains"$ is intended to produce predictions that are highly accurate around the borders of instances, since @fp:pl immediately outside the instance perimeter are punished harshly while still incentivizing the model to discover the highly-weighted instances.
 
 #figure(
   grid(
@@ -404,18 +422,21 @@ $<eqvmountains>
     column-gutter: 0mm,
     image("../figures/weight_maps/v_mountains.png", width: 70%),
   ),
-  caption: [$W_"v_mountains"$ sample showing a radiating effect around the foreground instances. The highest weight within a region is typically inside the instance, decaying around its borders, this can be intuitively visualized topographically and takes on a shape akin to a mountain range.
+  caption: [$W_"v_mountains"$ sample showing a radiating effect around the foreground instances with weight values decaying with distance from the foreground instance. The highest weight within a region is typically inside the instance.
   ],
 ) <figvmountainsmap>
-#todo("Formula, hypothesis, figure")
 
 ==== Voronoi Islands
+Voronoi islands are a concept similar, yet also inverse of the $W_"v_mountains"$ map. All regions again receive the same budget, weighing smaller regions higher. The weights now also scale with the euclidean distance from an instance $"dist"$. $sigma_i$ is another scaling factor that determines the sum of the background growth $Z_k$ in a given region $Z_k = sum_(j in R_k \\ I_k) 1-exp(-"dist"(j, I_k)/sigma_i)$.
+
 $
 w_n = cases(
-  dots quad quad  "if" y_n in R_k and y_n = 0, 
-  dots  quad quad  "if" y_n in R_k and y_n = 1
+frac(N, K(|I_k| + Z_k)) * (1 - exp(-"dist"(n, I_k) / sigma_i)) quad quad &"if" n in R_k "and" y_n = 0,
+frac(N, K(|I_k| + Z_k)) quad quad &"if" n in R_k "and" y_n = 1
 )
 $<eqvislands>
+
+$W_"v_islands"$ prioritizes instance discovery, if $hat(Y)$ contains foreground far away from a label instance, it is "punished" more harshly. The closer the foreground is to the instance border, the lower the punishment. @figvislandsmap shows how this produces a topographical effect of instances as islands with moats close to them and shores at the border between voronoi regions. This also leads to an effect in the 2D case where instances close to the border of the image receive a higher weight disproportionate to their size as the available region weight is higher. In the 3D datasets considered, this effect is not noticeable due to the high distance between any foreground instance and the image border.
 
 #figure(
   grid(
@@ -426,18 +447,19 @@ $<eqvislands>
   caption: [A sample of $W_"v_islands"$ as opposed to $W_"v_mountains"$ decreases weight values close to instance borders, increasing weight exponentially with distance from the foreground.
   ],
 ) <figvislandsmap>
-#todo("Formula, hypothesis, figure")
 ==== Adaptive Voronoi Weighting
-Adaptive weighting is a novel voronoi-based weight concept that can not be precomputed, but is computed on-the-fly based on model behaviour and predictions. Before loss values are calculated, if a region with a visible instance contains at least 1 @tp, it is deemed as recognized, with each pixel receiving a weight of 1, if foreground pixels are visible, but no @tp was predicted, the region's pixels receive a weight of $4$ (a predetermined hyperparameter). This makes regions where the model failed to find the foreground times more important. After this is calculated for all regions in the map, it is scaled to keep the unit weight constraint.
+Adaptive weighting is a novel voronoi-based weight concept that can not be precomputed, but is computed on-the-fly based on model behaviour and predictions. Before loss values are calculated, if a region with a visible instance contains at least 1 @tp, it is deemed as recognized, with each pixel receiving a weight of 1, if foreground pixels are visible, but no @tp was predicted, the region's pixels receive a weight of $beta = 4$ (a predetermined hyperparameter). This makes regions where the model failed to find the foreground $beta$ times more important. After this is calculated for all regions in the map, $W_"v_adaptive"$ is scaled to keep the unit weight constraint.
 
 Let $R_k$ be the voronoi region that 
 $
-w_n = cases(
-  1 quad quad  "if" y_n in R_k and hat(y)_n = 0, 
-  4 quad quad  "if" y_n in R_k and hat(y)_n = 1
+v_n = cases(beta quad quad "if" n in R_k "," |I_k| > 0", and" sum_(j in I_k) hat(y)_j = 0,
+1 quad quad  "otherwise"
 )
-$<eqvadaptive>
+$<eqvadaptive_unscaled>
 
+$
+w_n = frac(N, sum_(j=1)^N v_j) v_n
+$
 #todo("Formula, hypothesis, figure")
 
 == Model Architecture<sec_modelarchitecture>
@@ -493,10 +515,5 @@ table(
   caption: [An overview of the different patching strategies used per dataset. With the source image size as well as the size and number of extracted patches. The @wmh dataset is the only dataset with slightly inconsistent source image dimensions.
   ],
 )<tabpatching>
-
-This can lead to artifacts in train patches that are devoid of instances, but are still tesselated as a region and therefore punish FPs more harshly than in LTLC.
-#todo(
-  "Relatively metrics-agnostic implementation: No checkpointing, training to completion, mirror sentiment from nnUNet",
-)
 
 == Experimental Setup<sec_experimentalsetup>

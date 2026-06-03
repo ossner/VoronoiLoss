@@ -39,11 +39,10 @@ A recent paper by Bouteille et al. @bouteille2025learning includes the concept o
 
 #todo("Now entirely sure about the below part yet")
 
-However, in approaches that utilize a global and a local loss component with parameters $alpha$ and $beta$ as in @eq_globallocal, special attention has to be given to the learning rate to ensure consistency between experiments @kofler2023blobloss. Bouteille et al. @bouteille2025learning do not provide an analysis on the relative importance of $alpha$ and $beta$ and while the CC-loss methodology can be applied to arbitrary losses, only DiceCE is present in the evaluation.
+However, in approaches that utilize a global and a local loss component with parameters $alpha$ and $beta$ as in @eq_globallocal, special attention has to be given to the learning rate to ensure consistency between experiments @kofler2023blobloss. Bouteille et al. @bouteille2025learning do not provide an analysis on the relative importance of $alpha$ and $beta$ and while the CC-loss methodology can be applied to arbitrary losses, only DiceCE is present in the evaluation. These recent research directions can, however, extend the taxonomy proposed in @ma2021lossodyssey by the following fifth category:
 
-These recent research directions can extend the taxonomy proposed in @ma2021lossodyssey by the following fifth category:
 5. Instance-aware losses that use the calculation of connected components on the label mask to provide a learning signal to the network (e.g. $cal(L)_"blob"$).
-#todo("Hendrik doesn't like this formatting, but what can you do")
+
 Instance-aware loss functions can provide both a flexible paradigm (e.g. in the case of $cal(L)_"blob"$) as well as concrete instance-based learning signals (as is the case in @rachmadi2024family).
 
 == Weight Maps <sec_weight_maps>
