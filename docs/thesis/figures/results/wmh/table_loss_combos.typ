@@ -30,7 +30,7 @@
   [#delta(-0.018)],
 
   // test/global/F2
-  [F2],
+  [$F_2$],
   [0.365],
   [#delta(-0.084)],
   [#delta(-0.029)],
@@ -69,8 +69,18 @@
   [#text(size: 10.5pt)[*#deltainv(-0.304)*]],
   [#deltainv(-0.246)],
 
+  // test/instance/precision
+  [$"precision"_"inst"$],
+  [#text(size: 10.5pt)[*0.899*]],
+  [#delta(-0.077)],
+  [#delta(-0.063)],
+  [#delta(-0.045)],
+  [#delta(-0.053)],
+  [#delta(-0.046)],
+  [#delta(-0.076)],
+
   // test/instance/recall
-  [recall_inst],
+  [$"recall"_"inst"$],
   [0.315],
   [#delta(+0.105)],
   [#delta(+0.052)],
@@ -80,7 +90,7 @@
   [#text(size: 10.5pt)[*#delta(+0.113)*]],
 
   // test/instance/recall_q0
-  [recall_inst_Q1],
+  [$"recall"_"inst"_"Q1"$],
   [0.103],
   [#text(size: 10.5pt)[*#delta(+0.142)*]],
   [#delta(+0.065)],
@@ -90,7 +100,7 @@
   [#delta(+0.132)],
 
   // test/instance/recall_q1
-  [recall_inst_Q2],
+  [$"recall"_"inst"_"Q2"$],
   [0.199],
   [#delta(+0.165)],
   [#delta(+0.107)],
@@ -100,7 +110,7 @@
   [#text(size: 10.5pt)[*#delta(+0.181)*]],
 
   // test/instance/recall_q2
-  [recall_inst_Q3],
+  [$"recall"_"inst"_"Q3"$],
   [0.339],
   [#delta(+0.104)],
   [#delta(+0.059)],
@@ -110,7 +120,7 @@
   [#text(size: 10.5pt)[*#delta(+0.160)*]],
 
   // test/instance/recall_q3
-  [recall_inst_Q4],
+  [$"recall"_"inst"_"Q4"$],
   [0.685],
   [#delta(+0.024)],
   [#delta(-0.003)],
@@ -148,14 +158,4 @@
   [#delta(-0.024)],
   [#delta(-0.016)],
   [#delta(-0.019)],
-
-  // test/instance/precision
-  [precision_inst],
-  [#text(size: 10.5pt)[*0.899*]],
-  [#delta(-0.077)],
-  [#delta(-0.063)],
-  [#delta(-0.045)],
-  [#delta(-0.053)],
-  [#delta(-0.046)],
-  [#delta(-0.076)],
 )

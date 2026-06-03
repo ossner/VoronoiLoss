@@ -1,11 +1,5 @@
 #let entry-list = (
   (
-    key: "miqa",
-    short: "MIQA",
-    long: "Medical Imaging Quality Assessment",
-    group: "Abbreviations",
-  ),
-  (
     key: "em",
     short: "EM",
     long: "Electron Microscopy",
@@ -63,12 +57,6 @@
     key: "cnn",
     short: "CNN",
     long: "Convolutional Neural Network",
-    group: "Abbreviations",
-  ),
-  (
-    key: "tda",
-    short: "TDA",
-    long: "Topological Data Analysis",
     group: "Abbreviations",
   ),
   (
@@ -168,32 +156,5 @@
     short: [$F_beta$],
     description: [A measure using a positive real factor $beta$ to calculate the weighted harmonic mean between precision and recall. Higher is considered better.],
     group: "Metrics",
-  ),
-  (
-    key: "R",
-    short: $R$,
-    long: [${R_1, R_2, dots, R_n}$],
-    description: [The set of $n$ regions in an image, each of which contains exactly one seed instance],
-    group: "Mathematical Notations and Definitions",
-  ),
-  (
-    key: "Omega",
-    short: $Omega$,
-    description: [The discrete image space comprised of pixels $x$ with dimensionality $d$],
-    group: "Mathematical Notations and Definitions",
-  ),
-  (
-    key: "d",
-    short: $"d"$,
-    long: [$M times M mapsto RR$],
-    description: [A distance function $"d"$ operating on a given metric space $M$ returning a scalar distance value between two points],
-    group: "Mathematical Notations and Definitions",
-  ),
-  (
-    key: "I",
-    short: $I$,
-    long: [${I_1, I_2, dots, I_n}$],
-    description: [The set of instances in an image with $n$ connected components. The set of ground truth instances and predicted instances can be denoted with $I_("y")$ and $I_(hat(y))$ respectively.],
-    group: "Mathematical Notations and Definitions",
   ),
 )

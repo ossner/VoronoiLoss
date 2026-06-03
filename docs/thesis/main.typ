@@ -129,6 +129,7 @@
 // Set numbering mode (and restart for main content)
 #set page(numbering: "1")
 #counter(page).update(1)
+#include "chapters/0_mathnotation.typ"
 #set math.equation(numbering: "(1)")
 #set heading(numbering: "1.1")
 // --- Main Chapters ---

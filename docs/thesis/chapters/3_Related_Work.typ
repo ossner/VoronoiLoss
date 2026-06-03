@@ -5,10 +5,10 @@ This chapter covers prior research on the topic of multiple instance semantic se
 
 == A Taxonomy of Losses <sec_loss_taxonomy>
 A general idea of the current losses used in biomedical image segmentation is proposed in @ma2021lossodyssey. The researchers compiled the most common segmentation loss functions into four distinct categories, which we will later extend by a fifth:
-1. Distribution-based losses such as @ce and Focal Loss
+1. Distribution-based losses such as @ce
 2. Region-based losses such as Dice or Tversky
 3. Compound losses commonly combine distribution-based losses and region-based losses, for example DiceCE and DiceFocal
-4. Boundary-based losses comprise a relatively new type of loss function that aims to minimize the distance between ground truth and predicted segmentation (e.g. HD Loss)
+4. Boundary-based losses comprise a relatively new type of loss function that aims to minimize the distance between ground truth and predicted segmentation
 #todo("Make sure losses are introduced prior to this. But where?")
 
 This provides a solid foundation of the different approaches that have been made to address specific segmentation problems as well as an evaluation in multiple popular segmentation datasets, showing that a compound of Dice loss and a variation of cross entropy generally provides the highest evaluation scores. This finding is consistent with the frequent use of DiceCE in medical image segmentation @liu2024we @zhang2021lesloss. Liu et al. propose that this is due to a deep implicit connection between the two losses @liu2024we.
@@ -49,7 +49,32 @@ Instance-aware loss functions can provide both a flexible paradigm (e.g. in the 
 == Weight Maps <sec_weight_maps>
 Shirokikh et al. @shirokikh2020universal introduced connected-components-based weight maps to address the instance-imbalance problem. Weight maps can be precomupted based on the labels and applied during loss calculation to change the contribution of individual voxels to the final loss value. In their proposed @iw approach, the weight map is calculated by equally distributing a fixed budget corresponding to the number of voxels in the image across all connected components as well as the background.
 
-This results in an increased weight in smaller lesions compared to larger ones, but generally also results in the background voxels being assigned a much lower weight as the budget needs to be distributed across a significantly larger area. When compared to blob loss, however, @iw is unable to improve segmentation results @kofler2023blobloss. @iw nevertheless provides a concrete example of how a weight map can be used to address specific shortcomings of segmentation networks.
+This results in an increased weight in smaller lesions compared to larger ones, but generally also results in the background voxels being assigned a much lower weight as the budget needs to be distributed across a significantly larger area.
+
+
+Inverse weighting maps $W_"iw"$ were introduced by Shirokikh et al. @shirokikh2020universal and are designed to address the instance-imbalance problem by assigning a significantly higher weight to pixels belonging to a foreground instance. The background is treated as an additional instance $I_0$. Each pixel $w_n in W_"iw"$ is assigned a weight depending on the instance it is part of:
+
+$
+w_n = frac(N,(K + 1) abs(I_k)) quad quad  "if" y_n in {I_0, I_1, dots, I_K}
+$<eqiw>
+
+This has the effect that the background as well as foreground instances, which typically comprise a much smaller fraction of the label compared to the background, all receive the same "budget" that is distributed among all the pixels within the instances.
+
+The hypothesis behind this map is that the model is punished harshly for missing foreground pixels, even more so if they belong to small instances. @figiwmap shows an example of a $W_"iw"$ map in 2D as an overlay on the accompanying image.
+
+#figure(
+  grid(
+    columns: 2,
+    row-gutter: 2mm,
+    column-gutter: -20mm,
+    align: center + horizon,
+    image("../figures/weight_maps/binary_sample.png", width: 60%), image("../figures/weight_maps/iw.png", width: 70%), 
+  ),
+  caption: [A sample of a binary label map from the @mit dataset and the corresponding $W_"iw"$ weight map. All instances including the background receive the same portion of the total weight, with smaller instances therefore having a higher pixel-wise weight.
+  ],
+) <figiwmap>
+
+When compared to blob loss however, @iw is unable to improve segmentation results @kofler2023blobloss. @iw nevertheless provides a concrete example of how a weight map can be used to address specific shortcomings of segmentation networks.
 
 This work aims to position itself in the research gap created by these publications, providing a more thorough analysis of the use of voronoi tessellation in loss calculation as well an exploration of possible extensions to improve segmenation in multi-instance problems.
 #todo("Maybe move this sentence to the introduction, maybe keep it. Ask before final submission")
