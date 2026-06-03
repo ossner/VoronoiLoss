@@ -13,7 +13,7 @@ Some reported statistics of interest on multi-instance datasets are:
 - Number of instances per sample
 - Volume distribution of instances
 - Instance dominance (what fraction of the total foreground the largest instance takes up)
-- Instance volume as fraction of containing voronoi region volume ($frac(|I_k|,|R_k|-|I_k|)$)
+- Instance volume as fraction of containing voronoi region volume $(frac(|I_k|,|R_k|-|I_k|))$
 
 Adhering to current methods and standards, all datasets have been partitioned into a train, validation and test set, with the train set being used for algorithmic model optimization, the validation (val) set being used for hyperparameter tuning such as learning rate adjustment and the test set being used only once to report the final metrics of the model.
 

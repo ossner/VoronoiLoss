@@ -68,9 +68,9 @@ The hypothesis behind this map is that the model is punished harshly for missing
     row-gutter: 2mm,
     column-gutter: -20mm,
     align: center + horizon,
-    image("../figures/weight_maps/binary_sample.png", width: 60%), image("../figures/weight_maps/iw.png", width: 70%), 
+    image("../figures/weight_maps/binary_sample.png", width: 64%), image("../figures/weight_maps/iw.png", width: 75%), 
   ),
-  caption: [A sample of a binary label map from the @mit dataset and the corresponding $W_"iw"$ weight map. All instances including the background receive the same portion of the total weight, with smaller instances therefore having a higher pixel-wise weight.
+  caption: [A sample of a binary label map and the corresponding $W_"iw"$ weight map. All instances including the background receive the same portion of the total weight, with smaller instances therefore having a higher pixel-wise weight.
   ],
 ) <figiwmap>
 
