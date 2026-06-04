@@ -1,9 +1,9 @@
 = Symbols and Notation
+#context text(size: 10pt)[
 #align(center)[
   #table(
-    columns: (2fr, 2fr),    // Allocates 25% width to symbols and 75% to descriptions
+    columns: (1fr, 2fr),    // Allocates 25% width to symbols and 75% to descriptions
     stroke: none,           // Removes all borders for a clean look
-    row-gutter: 11pt,       // Adds consistent, breathing space between rows
     align: (left, left),    // Aligns both columns to the left
 
     // Table Headers
@@ -15,6 +15,7 @@
     $N in NN$, [Number of pixels/voxels in an image.],
     $Y: {y_1, y_2, dots, y_N | y_n in {0,1}}$, [The binary label map of a segmentation problem. It contains $N$ pixels.],
     $hat(Y): {hat(y)_1, hat(y)_2, dots, hat(y)_N | y_n in {0,1}}$, [The binary prediction map of a segmentation classifier. It contains $N$ pixels.],
+    $tilde(Y): {tilde(y)_1, tilde(y)_2, dots, tilde(y)_N | y_n in [0,1]}$, [The continuous sigmoid prediction map of a segmentation classifier. It contains $N$ values, each value signifies the confidence of a prediction.],
     $K in NN$, [Number of connected components/instances in an image.],
     $cal(N): p mapsto {v_1, v_2, dots}$, [The neighborhood of a pixel $p$ in an image returning the set of neighboring "connected" pixels.],
     $I: {I_1, I_2, dots, I_K}$, [The set of $K$ instances in a label $Y$.],
@@ -23,4 +24,5 @@
     $cal(L):Y times hat(Y) mapsto RR$, [A loss function serving as a learning signal of a segmentation classifier.],
     $cal(I) = {(I_p, I_g) | I_p in hat(I), I_g in I}$, [The set of all matched instances from connected label components $I$ and prediction components $hat(I)$.]
   )
+]
 ]

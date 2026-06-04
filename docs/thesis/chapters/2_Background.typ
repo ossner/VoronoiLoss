@@ -57,7 +57,7 @@ This signal can be calculated through the accumulation of each pixel into one of
   ],
 )<taberrorclassification>
 
-=== Loss Functions
+=== Loss Functions<sec_lossfunctionsbg>
 
 Typically, the number of pixels in each category are used in a formula that describes how well the classifier can predict the label map. This is called the loss function of a neural network. For now, a general definition of a function loss function $cal(L)$ that takes as arguments the ground truth label $Y$ and the predicted segmentation $hat(Y)$ to produce a scalar value quantifying prediction quality will suffice.
 
@@ -68,7 +68,44 @@ $
 $<eqDSC>
 
 This is a popular segmentation metric that quantifies the overlap of the prediction and label and returns a number from 0 to 1.
-The closer the value of @dsc is to $1$, the "better" the segmentation result is said to be. Which is why minimizing $cal(L)_"DSC"=1-"DSC"$ is a commonly used training goal for the classifier. The various loss functions that we use in this work are described in @sec_loss_functions_method.
+The closer the value of @dsc is to $1$, the "better" the segmentation result is said to be. Which is why minimizing $cal(L)_"DSC"=1-"DSC"$ is a commonly used training goal for the classifier.
+
+In reality, the losses do not operate directly on the binary prediction $hat(Y)$, but rather on the sigmoid confidence probabilities $tilde(Y)$, which describe a continuous probability in $[0,1]$ that the pixel in question belongs to the forground:
+
+$
+  tilde(Y): {tilde(y)_1, tilde(y)_2, dots, tilde(y)_N | y_n in [0,1]}
+$
+
+These probabilities together with the reference label are then passed to loss functions to compute the learning signal in a more flexible manner:
+
+$
+  cal(L)_"Dice" (Y,tilde(Y)) =1-frac(2sum_(n=1)^N tilde(y)_(n)y_n, sum_(n=1)^N (tilde(y)_n^2+y_n^2))
+$<eqLDiceunweighted>
+
+$
+  cal(L)_"BCE" (Y,tilde(Y)) =-frac(1,N) sum_(n=1)^N [y_n log tilde(y)_n+(1-y_n) log(1-tilde(y)_n)]
+$<eqLBCEunweighted>
+
+$cal(L)_"Dice"$ and $cal(L)_"BCE"$ are often combined into a compound loss function $cal(L)_"DiceCE"$ in the formulation:
+
+$
+  cal(L)_"DiceCE"=cal(L)_"Dice"+cal(L)_"BCE"
+$
+
+This notion of component weighting is mirrored by the instance-aware losses discussed in @sec_instance_losses, where global and local components receive relative weights
+
+$
+  cal(L)_"Tversky" (Y,tilde(Y), alpha_"T", beta_"T")=
+  \
+  1-frac(sum_(n=1)^N tilde(y)_n y_n, sum_(n=1)^N tilde(y)_n y_n + alpha_"T" sum_(i=1)^N tilde(y)_i (1-y_n) + beta_"T" sum_(n=1)^N (1-tilde(y)_n) y_n)
+$<eqLTverskyunweighted>
+Tversky loss includes hyperparameters $alpha_"T", beta_"T"$ that serve to control the punishment of pixels classified as @fp and @fn respectively @salehi2017tversky. The higher $alpha_"T"$, the more conservative the model's predictions.
+
+Similarly to $cal(L)_"DiceCE"$, compound loss functions can be composed as $cal(L)_"DiceTversky"$ or $cal(L)_"CETversky"$.
+
+The various modifications to loss functions that we use in this work are described in @sec_loss_functions_method.
+
+#todo("Refine this")
 
 === Network Optimization <sec_networkoptimization>
 The network classifier described above is trained in discrete steps that incorporate the gradiend of the loss function as well as a scaling learning rate parameter $alpha_"lr"$ in the *optimization rule*. The optimization iteratively updates the classifiers parameters $theta$ at a discrete time step $k$ to the next parameters at time $k+1$:
@@ -186,10 +223,11 @@ This phenomenon can be seen in exemplary loss function values shown in @figinsta
 
 #figure(
   grid(
-    columns: 2,
+    columns: 3,
     row-gutter: 2mm,
     column-gutter: -15mm,
-    image("../figures/DSC075_1.png", width: 60%), image("../figures/DSC075_2.png", width: 60%),
+    align: center + horizon,
+    image("../figures/DSC075_1.png", width: 65%), image("../figures/DSC075_2.png", width: 65%), image("../figures/DSC075_3.png", width: 70%),
   ),
   caption: [Two visualization of a predicted segmentation overlapped with a ground truth label. Colors correspond to the error classification:  #box(inset: 0pt, rect(width: 0.8em, height: 0.8em, fill: class_colors.at(0), stroke: 0.1pt)) TP, #box(inset: 0pt, rect(width: 0.8em, height: 0.8em, fill: class_colors.at(1), stroke: 0.1pt)) FN, #box(inset: 0pt, rect(width: 0.8em, height: 0.8em, fill: class_colors.at(2), stroke: 0.1pt)) FP, #box(inset: 0pt, rect(width: 0.8em, height: 0.8em, fill: class_colors.at(3), stroke: 0.1pt)) TN. In both cases $"DSC"=0.75$, which means during training, $cal(L)_"DSC"$ would provide the same signal to adjust the parameters of the classifier.],
 ) <figinstanceimbalance>

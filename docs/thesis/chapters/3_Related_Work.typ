@@ -9,7 +9,6 @@ A general idea of the current losses used in biomedical image segmentation is pr
 2. Region-based losses such as Dice or Tversky
 3. Compound losses commonly combine distribution-based losses and region-based losses, for example DiceCE and DiceFocal
 4. Boundary-based losses comprise a relatively new type of loss function that aims to minimize the distance between ground truth and predicted segmentation
-#todo("Make sure losses are introduced prior to this. But where?")
 
 This provides a solid foundation of the different approaches that have been made to address specific segmentation problems as well as an evaluation in multiple popular segmentation datasets, showing that a compound of Dice loss and a variation of cross entropy generally provides the highest evaluation scores. This finding is consistent with the frequent use of DiceCE in medical image segmentation @liu2024we @zhang2021lesloss. Liu et al. propose that this is due to a deep implicit connection between the two losses @liu2024we.
 
@@ -21,7 +20,6 @@ Using the notation of $K$ Instances $I:{I_0, I_1, dots I_K}$ identified using th
 $
   cal(L)_"blob" (Y, hat(Y)) = frac(1,K) sum_(k=1)^K cal(L)((y_i)_(i in I_k),(hat(y)_i)_(i in I_k) )
 $<eq_blobloss>
-#todo("Hendrik said that the math isn't necessary, but I don't know how to properly get the point of blob loss as a paradigm across otherwise")
 
 This means that the loss value for each individual instance is calculated by only considering the pixels in that instance and averaging those loss values over all $K$ instances. This therefore describes not any specific loss function, but a general paradigm that can be applied using any loss function (the authors evaluate both Dice and Tversky loss as the function $cal(L)$ used in @eq_blobloss).
 
@@ -73,7 +71,7 @@ The hypothesis behind this map is that the model is punished harshly for missing
   ],
 ) <figiwmap>
 
-When compared to blob loss however, @iw is unable to improve segmentation results @kofler2023blobloss. @iw nevertheless provides a concrete example of how a weight map can be used to address specific shortcomings of segmentation networks.
+When compared to blob loss however, @iw is unable to improve segmentation results @kofler2023blobloss, it nevertheless provides a concrete example of how a weight map can be used to address specific shortcomings of segmentation networks.
 
 This work aims to position itself in the research gap created by these publications, providing a more thorough analysis of the use of voronoi tessellation in loss calculation as well an exploration of possible extensions to improve segmenation in multi-instance problems.
 #todo("Maybe move this sentence to the introduction, maybe keep it. Ask before final submission")

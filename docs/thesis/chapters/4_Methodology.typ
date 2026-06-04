@@ -260,34 +260,16 @@ $
 CCDice is of particular interest as a metric, as it incorporates the notion that all regions and their instances are equally important.
 
 == Loss Formulations and Weighted Combination<sec_loss_functions_method>
-This section provides a concrete formulation of the loss functions that were used and compared during the course of our experimentation, since there are many loss functions to choose from and the introduction of hyperparaters makes a complete comparrison untractable, we will limit ourselves to the most common losses in medical image segmentation.
+#todo("Move this all to background")
+This section provides a concrete formulation of the loss functions that were used and compared during the course of our experimentation, since there are many loss functions to choose from and the introduction of hyperparaters makes a complete comparrison untractable, we will limit ourselves to some of the most common losses in medical image segmentation introduced in @sec_lossfunctionsbg as a basis and propose several augmentations to them.
 
-$
-  cal(L)_"Dice"=1-frac(2sum_(n=1)^N hat(y)_(n)y_n, sum_(n=1)^N (hat(y)_n^2+y_n^2))
-$
+@sec_voronoi_loss describes the region-wise paradigm based on Voronoi regions that can be applied to arbitrary loss functions. @sec_weight_maps_method introduces several novel weight maps aimed to provide an efficient way to steer model behaviour.
 
-$
-  cal(L)_"BCE"=-sum_(n=1)^N (y_n log hat(y)_n+(1-y_n) log(1-hat(y)_n))
-$
-
-$cal(L)_"Dice"$ and $cal(L)_"BCE"$ are often combined into a compound loss function $cal(L)_"DiceCE"$ using individual weights $lambda_"Dice"$ and $lambda_"BCE"$ (though these are almost always set to $1$) in the formulation:
-
-$
-  cal(L)_"DiceCE"=lambda_"Dice"cal(L)_"Dice"+lambda_"BCE"cal(L)_"BCE"
-$
-
-This notion of component weighting is mirrored by the instance-aware losses discussed in @sec_instance_losses, where global and local components receive relative weights
-
-$
-  cal(L)_"Tversky" (alpha, beta)=1-frac(sum_(n=1)^N hat(y)_n y_n, sum_(n=1)^N hat(y)_n y_n + alpha sum_(i=1)^N hat(y)_i (1-y_n) + beta sum_(n=1)^N (1-hat(y)_n) y_n)
-$
-Tversky loss includes hyperparameters $alpha, beta$ that serve to control the punishment of pixels classified as @fp and @fn respectively @salehi2017tversky. The higher $alpha$, the more conservative the model's predictions, 
-
-=== Voronoi-based Region Wise Loss <voronoi_loss>
+=== Voronoi-based Region Wise Loss <sec_voronoi_loss>
 We define a Voronoi-based loss similarly to CC-Loss introduced by Bouteille et al. @bouteille2025learning as the average region-wise loss across all Voronoi regions $R$ using an arbitrary loss function $cal(L)$:
 
 $
-  cal(L)_"Voronoi" (Y,hat(Y)) =sum_(R_k in R) frac(cal(L)(Y inter R_k, hat(Y) inter R_k),K)
+  cal(L)_"Voronoi" (Y,tilde(Y)) =sum_(R_k in R) frac(cal(L)(Y inter R_k, tilde(Y) inter R_k),K)
 $<eqvoronoiloss>
 
 @figvoronoiloss shows the process on a label with $K=3$. The labels and predictions from each region are passed to the loss function and their signals are averaged.
@@ -301,6 +283,8 @@ $<eqvoronoiloss>
   caption: [An example of Voronoi-based region-wise loss. The labels $Y$ and their connected components are used to compute the Voronoi regions $R$. The labels and the predicted segmentation from the model $hat(Y)$ are then masked using the regions and the region-wise loss is averaged across them.
   ],
 ) <figvoronoiloss>
+
+#todo("Make it more clear from which image the regions originate")
 
 As in the previously introduced instance-aware loss functions, $cal(L)_"Voronoi"$ is combined with a global loss in a weighted formula where the weights $alpha$ and $beta$ scale the relative importance of the global- and region-wise components:
 
@@ -482,7 +466,7 @@ Since the label files used in loss calculations are static and do not change, ef
 
 The introduction of image patching, a common method in segmentation to divide individual samples into many into smaller regions of interest, makes precomputation necessary, since calculation of these tensors on-the-fly can introduce several artifacts that do not represent the original data#footnote([An example of such an artifact could be an instance that is split into on the edges of the patch, resulting in two voronoi regions from the same component.]). Image patching extracts multiple sub-images from a larger original sample, diversifying training data when combined with augmentations.
 
-@tabpatching shows the patching parameters used for the training on the different datasets. The overall patching algorithm is based on a positive and negative label approach implemented in MONAI @cardoso2022monai, in which the patch location is randomly centered on foreground or background pixels with a ratio of 2:1. When a patching location has been chosen, the sub-image is cropped from all accompanying precomputed weight maps at the same location.
+@tabpatching shows the patching parameters used for the training on the different datasets. The overall patching algorithm is based on a positive and negative label approach implemented in the popular MONAI library for medical machine learning @cardoso2022monai, in which the patch location is randomly centered on foreground or background pixels with a ratio of 2:1. When a patching location has been chosen, the sub-image is cropped from all accompanying precomputed weight maps at the same location.
 #figure(
 table(
   columns: (auto, auto, auto, auto),
@@ -491,6 +475,14 @@ table(
   table.header(
     [*Dataset*], [*Source Image Size*], [*Patch RoI*], [*Number of Patches*],
   ),
+  [@mets],
+  [$(256,256,150)$],
+  [$(96,96,64)$],
+  [20],
+  [@wmh],
+  [$~(240,240,48)$],
+  [$(64,64,48)$],
+  [16],
   [@cv],
   [$(800,800)$],
   [$(288, 288)$],
@@ -503,17 +495,45 @@ table(
   [$(1024,768)$],
   [$(512, 512)$],
   [16],
-  [@mets],
-  [$(256,256,150)$],
-  [$(96,96,64)$],
-  [20],
-  [@wmh],
-  [$~(240,240,48)$],
-  [$(64,64,48)$],
-  [16],
 ),
   caption: [An overview of the different patching strategies used per dataset. With the source image size as well as the size and number of extracted patches. The @wmh dataset is the only dataset with slightly inconsistent source image dimensions.
   ],
 )<tabpatching>
 
 == Experimental Setup<sec_experimentalsetup>
+This section gives a description of the experiments we conducted, the hyperparaters used for the generation of their results and further important points that aid in reproducability.
+
+
+#figure(
+table(
+  columns: (auto, auto, auto, auto),
+  inset: 10pt,
+  align: horizon,
+  table.header(
+    [*Dataset*], [*Learning Rate*], [*Batch Size*], [*Num. Training Epochs*],
+  ),
+  [@mets],
+  [$0.001$],
+  [$8$],
+  [$500$],
+  [@wmh],
+  [$0.001$],
+  [$16$],
+  [$500$],
+  [@cv],
+  [$0.001$],
+  [$16$],
+  [$300$],
+  [@ag],
+  [$0.001$],
+  [$16$],
+  [$300$],
+  [@mit],
+  [$0.001$],
+  [$16$],
+  [$300$],
+),
+  caption: [An overview of the hyperparameters used during training.
+  ],
+)<tabhparams>
+#todo("What do we compare, epochs, baseline, batch size, learning rate, augmentations")

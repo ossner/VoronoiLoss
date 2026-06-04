@@ -26,6 +26,14 @@
   rgb("#616161"),  // equal
 )
 
+#let datasetcolors = (
+  rgb("#0B4F6C"),  // SBM
+  rgb("#EF7B45"),  // WMH
+  rgb("#20BF55"),  // CV
+  rgb("#84C7D0"),  // AG
+  rgb("#DF367C"),  // MIT
+)
+
 #let good(v) = text(
   fill: rgb("#1a914c"),
   if v > 0 { "+" + str(v) } else { str(v) }

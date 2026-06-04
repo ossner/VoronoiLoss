@@ -1,4 +1,4 @@
-#import "@preview/exzellenz-tum-thesis:0.2.0": exzellenz-tum-thesis
+#import "@local/exzellenz-tum-thesis:0.2.1": exzellenz-tum-thesis
 
 #import "utils.typ": draft, inwriting, todo
 #import "glossary.typ": entry-list
