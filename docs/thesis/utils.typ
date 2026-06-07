@@ -50,7 +50,7 @@
   } else if v < 0 {
     bad(v)
   } else {
-    text(fill:  improvement_colors.at(2), "0.00")
+    text(fill:  improvement_colors.at(2), "±0.00")
   }
 }
 
@@ -60,6 +60,6 @@
   } else if v > 0 {
     bad(v)
   } else {
-    text(fill:  improvement_colors.at(2), "0.00")
+    text(fill:  improvement_colors.at(2), "±0.00")
   }
 }

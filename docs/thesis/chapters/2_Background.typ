@@ -59,28 +59,28 @@ This signal can be calculated through the accumulation of each pixel into one of
 
 === Loss Functions<sec_lossfunctionsbg>
 
-Typically, the number of pixels in each category are used in a formula that describes how well the classifier can predict the label map. This is called the loss function of a neural network. For now, a general definition of a function loss function $cal(L)$ that takes as arguments the ground truth label $Y$ and the predicted segmentation $hat(Y)$ to produce a scalar value quantifying prediction quality will suffice.
-
-A common choice for this loss function is based on the @dsc:
+Typically, the number of pixels in each category are used in a formula that describes how well the classifier can predict the label map. This is called the loss function of a neural network. A starting definition for a loss function $cal(L)$ that takes as arguments the ground truth label $Y$ and the predicted binary segmentation $hat(Y)$ to produce a scalar value quantifying prediction quality. A common choice for this loss function is based on the overlap-based @dsc:
 
 $
   "DSC"=frac(2 times "TP", 2times"TP"+"FP"+"FN")
 $<eqDSC>
 
 This is a popular segmentation metric that quantifies the overlap of the prediction and label and returns a number from 0 to 1.
-The closer the value of @dsc is to $1$, the "better" the segmentation result is said to be. Which is why minimizing $cal(L)_"DSC"=1-"DSC"$ is a commonly used training goal for the classifier.
+The closer the value of @dsc is to $1$, the better the segmentation result is said to be. Which is why minimizing $cal(L)_"DSC"=1-"DSC"$ would be a simple training objective for a segmentation network.
 
-In reality, the losses do not operate directly on the binary prediction $hat(Y)$, but rather on the sigmoid confidence probabilities $tilde(Y)$, which describe a continuous probability in $[0,1]$ that the pixel in question belongs to the forground:
+However, $cal(L)_"DSC"$ (also known as the hard dice) is not differentiable, as it operates on the binary prediction map obtained through a thresholding step. In soft dice $cal(L)_"Dice"$, the loss does not operate directly on $hat(Y)$, but rather on the sigmoid confidence probabilities $tilde(Y)$. Each element in $tilde(Y)$ describes the continuous probability in $[0,1]$ that the pixel in question belongs to the forground:
 
 $
   tilde(Y): {tilde(y)_1, tilde(y)_2, dots, tilde(y)_N | y_n in [0,1]}
 $
 
-These probabilities together with the reference label are then passed to loss functions to compute the learning signal in a more flexible manner:
+In order to enable network optimization through backpropagation, these probabilities together with the reference label are passed to loss functions to compute the differentiable learning signal:
 
 $
   cal(L)_"Dice" (Y,tilde(Y)) =1-frac(2sum_(n=1)^N tilde(y)_(n)y_n, sum_(n=1)^N (tilde(y)_n^2+y_n^2))
 $<eqLDiceunweighted>
+
+$cal(L)_"Dice"$ is frequently paired with a pixel-wise error metrics based on @bce, which evaluates every pixels probability independently based on how close they it is to the actual label value.
 
 $
   cal(L)_"BCE" (Y,tilde(Y)) =-frac(1,N) sum_(n=1)^N [y_n log tilde(y)_n+(1-y_n) log(1-tilde(y)_n)]
@@ -90,47 +90,43 @@ $cal(L)_"Dice"$ and $cal(L)_"BCE"$ are often combined into a compound loss funct
 
 $
   cal(L)_"DiceCE"=cal(L)_"Dice"+cal(L)_"BCE"
-$
+$<eqdicece>
 
-This notion of component weighting is mirrored by the instance-aware losses discussed in @sec_instance_losses, where global and local components receive relative weights
+This hybrid formulation leverages the strengths of both metrics, serving as a robust and flexible learning signal for modern segmentation networks.
+
+Another common loss function particularly in medical image segmentation is $cal(L)_"Tversky"$ which introduces hyperparameters $alpha_"T", beta_"T"$ that serve to control the punishment of pixels classified as @fp and @fn:short respectively.
 
 $
   cal(L)_"Tversky" (Y,tilde(Y), alpha_"T", beta_"T")=
   \
-  1-frac(sum_(n=1)^N tilde(y)_n y_n, sum_(n=1)^N tilde(y)_n y_n + alpha_"T" sum_(i=1)^N tilde(y)_i (1-y_n) + beta_"T" sum_(n=1)^N (1-tilde(y)_n) y_n)
+  1-frac(sum_(n=1)^N tilde(y)_n y_n, sum_(n=1)^N tilde(y)_n y_n + alpha_"T" sum_(n=1)^N tilde(y)_i (1-y_n) + beta_"T" sum_(n=1)^N (1-tilde(y)_n) y_n)
 $<eqLTverskyunweighted>
-Tversky loss includes hyperparameters $alpha_"T", beta_"T"$ that serve to control the punishment of pixels classified as @fp and @fn respectively @salehi2017tversky. The higher $alpha_"T"$, the more conservative the model's predictions.
+This provides additional control in the model's segmentation behaviour. Particularly in medical imaging problems like tumor detection, penalizing false negatives to a higher degree is often desirable @salehi2017tversky.
 
-Similarly to $cal(L)_"DiceCE"$, compound loss functions can be composed as $cal(L)_"DiceTversky"$ or $cal(L)_"CETversky"$.
+Similarly to @eqdicece, additional compound loss functions can be composed as $cal(L)_"DiceTversky"$ or $cal(L)_"CETversky"$.
 
 The various modifications to loss functions that we use in this work are described in @sec_loss_functions_method.
 
-#todo("Refine this")
-
 === Network Optimization <sec_networkoptimization>
-The network classifier described above is trained in discrete steps that incorporate the gradiend of the loss function as well as a scaling learning rate parameter $alpha_"lr"$ in the *optimization rule*. The optimization iteratively updates the classifiers parameters $theta$ at a discrete time step $k$ to the next parameters at time $k+1$:
+The segmentation network described above is trained in discrete steps that incorporate the gradiend of the loss function as well as a scaling learning rate parameter $alpha_"lr"$ in the *optimization rule*. The optimization iteratively updates the classifiers parameters $theta$ at a discrete time step $k$ to the next parameters at time $k+1$:
 $
-  theta_(k+1)=theta_k+alpha_("lr") gradient cal(L)(theta_k)
+  theta_(k+1)=theta_k-alpha_("lr") gradient cal(L)(theta_k)
 $
-The learning rate parameter $alpha_"lr"$ therefore determines how sensitive the model is to the loss function gradients. It is often visualized as a step size along the gradient landscape of the model, the higher the learning rate, the larger the steps and the faster the parameters can approach an optimum, however this can also lead to instability and "overshooting" optimal parameters.
+The learning rate parameter $alpha_"lr"$ scales the magnitude of parameter updates. It is often visualized as a step size along the gradient landscape of the model, the higher the learning rate, the larger the steps and the faster the parameters can approach an optimum, however this can also lead to instability and "overshooting" of optimal parameters.
 
-The learning rate is an important experimental variable to determine and control for in comparisons.
-
-#todo("refine and expand")
+Because of its high impact on the optimization dynamics, the learning rate is an important experimental variable to determine and control for in comparisons.
 
 === Weight Maps <sec_weight_maps_bg>
-Weight maps are tensors of the same shape as the image label that can be used in segmentation tasks to introduce biases in order to steer loss behaviour. Individual voxels are assigned a numerical value that determines the importance of that point, resulting in a higher loss value if a voxel with a high weight has been misidentified.
+Weight maps are tensors of the same shape as the image and label utilized in segmentation tasks to introduce biases in order to steer loss behaviour. Individual voxels are assigned a numerical value that determines the importance of that point, resulting in a higher loss in regions that are deemed critical.
 They can be formulated similarly to $Y$ and $hat(Y)$:
 $
   W : {w_1, w_2, dots, w_N | w_n in RR}
 $<eq_weightmap>
-In order to keep the total loss magnitude theoretically consistent, a constraint is applied to ensure the sum of the weight map is equalized to the number of voxels in the image:
+In order to maintain consistency in the total theoretical loss magnitude and prevent unintended scaling of the gradients, a constraint is applied to ensure the sum of the weight map is equalized to the number of voxels in the image:
 $
   sum_(w in W) w = N
 $
-Weight maps allow for biases to be manually introduced to the loss calculation, punishing the model more if it mis-identifies important areas of the image. A concrete formulation of several weight maps and how they are applied to different loss functions is proposed in @sec_weight_maps_method.
-
-#todo("rework especially the theoretically part")
+Weight maps allow for targeted spatial biases to be manually or algorithmically injected to the loss calculation, punishing the model more if it mis-identifies important areas of the image. A concrete formulation of several weight maps and how they are applied to different loss functions is proposed in @sec_weight_maps_method.
 
 == Connected Components <sec_connectedcomponents>
 The connected components algorithm is a procedure in computer vision which provides a way to differentiate between subsets of a space. These subsets in our case of binary segmentation are instances determined by the previously described binary label map and a connectivity parameter. In the application of pixelated images, interconnectedness of components is determined by the neighborhood $cal(N)$ of a pixel $p$.
@@ -212,14 +208,13 @@ These distances can be efficiently computed using the @edt algorithm. @figvorono
 == The Instance Imbalance Problem <instance_imbalance>
 The eponymous multiple instances in multi-instance segmentation stem from the specific problem domain wherein images contain many of these spatially separate components. Biomedical imaging is a domain which contains many such problem cases. Anatomies or pathologies can manifest as many spatially separate instances of the same class. Examples of these include many types of cancers such as liver tumors or brain metastases, but also anatomical features such as cells or their organelles. Specific examples of such applications are discussed in @sec_datasets.
 
-
 These cases often contain instances of diverse shapes, sizes and numbers. Since the data implicitly steers the behaviour of the neural network through the loss function, a phenomenon occurs where loss functions prioritize larger instances as an "easier way" to improve the segmentation loss.
 
 #todo("Rework this with Hendrik comment")
 
 When considering such cases, instance size disparaties and other variations can influence computational algorithms in ways that are not always true to clinical reality. In the case of many cancers for example, lesion size does not always correspond to clinical relevance and smaller cancer lesions can be malignant while larger ones might be benign. In such cases, assigning a higher importance to larger instances, whether it be implicit or explicit, can lead to undesirable outcomes.
 
-This phenomenon can be seen in exemplary loss function values shown in @figinstanceimbalance where the commonly used dice loss provides the same training signal for both segmentations whereas the smaller instance is missed entirely. This can lead to implicit prioritization of the larger instance during training, as the models tend to prioritize "expanding" existing true positives over identifying missed instances.
+This phenomenon can be seen in exemplary loss function values shown in @figinstanceimbalance where the commonly used dice loss provides the same training signal for both segmentations whereas the smaller instance is missed entirely. This can lead to implicit prioritization of the larger instance during training, as the models tend to focus on refining existing true positives over identifying missed instances.
 
 #figure(
   grid(

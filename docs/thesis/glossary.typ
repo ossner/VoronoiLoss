@@ -12,6 +12,12 @@
     group: "Abbreviations",
   ),
   (
+    key: "pfd",
+    short: "PFD",
+    long: "Platelet Function Disorder",
+    group: "Abbreviations",
+  ),
+  (
     key: "tp",
     short: "TP",
     long: "true positive",
@@ -39,6 +45,12 @@
     key: "mri",
     short: "MRI",
     long: "Magnetic Resonance Imaging",
+    group: "Abbreviations",
+  ),
+  (
+    key: "flair",
+    short: "FLAIR",
+    long: "Fluid-Attenuated Inversion Recovery",
     group: "Abbreviations",
   ),
   (
@@ -100,6 +112,13 @@
     group: "Metrics",
   ),
   (
+    key: "bce",
+    short: "BCE",
+    long: "binary cross entropy",
+    description: [],
+    group: "Metrics",
+  ),
+  (
     key: "sqdsc",
     short: "SQDSC",
     long: "Segmentation Quality Dice Similarity Coefficient",
@@ -108,14 +127,14 @@
   ),
   (
     key: "mets",
-    short: "mets",
+    short: "METS",
     long: "brain metastases",
     description: [],
     group: "Datasets",
   ),
   (
     key: "wmh",
-    short: "wmh",
+    short: "WMH",
     long: "white matter hyperintensities",
     plural: true,
     description: [],
@@ -123,7 +142,7 @@
   ),
   (
     key: "cv",
-    short: "cv",
+    short: "CV",
     long: "canalicular vessels",
     plural: true,
     description: [],
@@ -131,7 +150,7 @@
   ),
   (
     key: "mit",
-    short: "mit",
+    short: "MIT",
     long: "mitochondria",
     plural: true,
     description: [],
@@ -139,7 +158,7 @@
   ),
   (
     key: "ag",
-    short: "ag",
+    short: "AG",
     long: "alpha granules",
     description: [],
     group: "Datasets",

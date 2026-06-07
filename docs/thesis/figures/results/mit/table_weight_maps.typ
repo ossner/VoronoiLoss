@@ -23,7 +23,7 @@
   [0.944],
   [#delta(-0.013)],
   [#delta(-0.003)],
-  [#text(size: 10.5pt)[*#delta(+0.003)*]],
+  [#text(size: 10.5pt)[*#delta(+0.000)*]],
   [#delta(-0.007)],
   [#delta(-0.017)],
 
@@ -32,7 +32,7 @@
   [0.943],
   [#text(size: 10.5pt)[*#delta(+0.018)*]],
   [#delta(-0.004)],
-  [#delta(+0.001)],
+  [#delta(+0.003)],
   [#delta(-0.002)],
   [#delta(+0.015)],
 
@@ -41,16 +41,16 @@
   [0.907],
   [#delta(-0.062)],
   [#delta(-0.004)],
-  [#text(size: 10.5pt)[*#delta(+0.021)*]],
+  [#delta(-0.025)],
   [#delta(-0.047)],
-  [#delta(+0.012)],
+  [#text(size: 10.5pt)[*#delta(+0.012)*]],
 
   // test/instance/dice
   [SQDSC],
   [0.939],
   [#delta(-0.014)],
   [#delta(-0.007)],
-  [#text(size: 10.5pt)[*#delta(+0.002)*]],
+  [#text(size: 10.5pt)[*#delta(+0.006)*]],
   [#delta(-0.001)],
   [#delta(-0.021)],
 
@@ -59,7 +59,7 @@
   [0.151],
   [#deltainv(+0.013)],
   [#deltainv(+0.018)],
-  [#text(size: 10.5pt)[*#deltainv(-0.016)*]],
+  [#text(size: 10.5pt)[*#deltainv(-0.033)*]],
   [#deltainv(-0.006)],
   [#deltainv(+0.046)],
 
@@ -68,16 +68,16 @@
   [0.873],
   [#delta(-0.119)],
   [#delta(-0.014)],
-  [#text(size: 10.5pt)[*#delta(+0.027)*]],
+  [#delta(-0.053)],
   [#delta(-0.091)],
-  [#delta(+0.013)],
+  [#text(size: 10.5pt)[*#delta(+0.013)*]],
 
   // test/instance/recall
   [$"recall"_"inst"$],
   [0.962],
   [#text(size: 10.5pt)[*#delta(+0.027)*]],
   [#delta(+0.006)],
-  [#delta(+0.008)],
+  [#delta(+0.017)],
   [#delta(+0.021)],
   [#delta(+0.005)],
 
@@ -86,7 +86,7 @@
   [0.863],
   [#text(size: 10.5pt)[*#delta(+0.091)*]],
   [#delta(+0.031)],
-  [#delta(+0.023)],
+  [#delta(+0.057)],
   [#delta(+0.077)],
   [#delta(+0.008)],
 
@@ -122,16 +122,16 @@
   [0.896],
   [#delta(+0.007)],
   [#delta(-0.002)],
-  [#delta(+0.010)],
-  [#text(size: 10.5pt)[*#delta(+0.013)*]],
+  [#text(size: 10.5pt)[*#delta(+0.019)*]],
+  [#delta(+0.013)],
   [#delta(-0.012)],
 
   // test/global/precision
   [precision],
-  [0.948],
+  [#text(size: 10.5pt)[*0.948*]],
   [#delta(-0.064)],
   [#delta(-0.001)],
-  [#text(size: 10.5pt)[*#delta(+0.005)*]],
+  [#delta(-0.003)],
   [#delta(-0.012)],
   [#delta(-0.067)],
 
@@ -140,7 +140,7 @@
   [0.942],
   [#text(size: 10.5pt)[*#delta(+0.041)*]],
   [#delta(-0.004)],
-  [#delta(+0.000)],
+  [#delta(+0.004)],
   [#delta(+0.000)],
   [#delta(+0.038)],
 )

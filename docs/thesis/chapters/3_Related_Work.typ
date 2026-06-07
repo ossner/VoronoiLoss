@@ -5,6 +5,7 @@ This chapter covers prior research on the topic of multiple instance semantic se
 
 == A Taxonomy of Losses <sec_loss_taxonomy>
 A general idea of the current losses used in biomedical image segmentation is proposed in @ma2021lossodyssey. The researchers compiled the most common segmentation loss functions into four distinct categories, which we will later extend by a fifth:
+
 1. Distribution-based losses such as @ce
 2. Region-based losses such as Dice or Tversky
 3. Compound losses commonly combine distribution-based losses and region-based losses, for example DiceCE and DiceFocal
@@ -35,9 +36,7 @@ This notion of global and local components is mirrored in other instance-aware l
 
 A recent paper by Bouteille et al. @bouteille2025learning includes the concept of voronoi regions as a partition of the image for the purpose of loss calculation. They call this approach CC-loss. Similar to blob loss, the researchers use these voronoi regions as a masking function, averaging a local component across all regions, but also combining them with a global component.
 
-#todo("Now entirely sure about the below part yet")
-
-However, in approaches that utilize a global and a local loss component with parameters $alpha$ and $beta$ as in @eq_globallocal, special attention has to be given to the learning rate to ensure consistency between experiments @kofler2023blobloss. Bouteille et al. @bouteille2025learning do not provide an analysis on the relative importance of $alpha$ and $beta$ and while the CC-loss methodology can be applied to arbitrary losses, only DiceCE is present in the evaluation. These recent research directions can, however, extend the taxonomy proposed in @ma2021lossodyssey by the following fifth category:
+However, in approaches that utilize a global and a local loss component with parameters $alpha$ and $beta$ as in @eq_globallocal, special attention has to be given to the relationship between these parameters and the learning rate to ensure consistency between experiments @kofler2023blobloss. Bouteille et al. @bouteille2025learning do not provide an analysis on the relative importance of $alpha$ and $beta$ and while the CC-loss methodology can be applied to arbitrary losses, only DiceCE is present in the evaluation. These recent research directions can, however, extend the taxonomy proposed in @ma2021lossodyssey by the following fifth category:
 
 5. Instance-aware losses that use the calculation of connected components on the label mask to provide a learning signal to the network (e.g. $cal(L)_"blob"$).
 

@@ -27,6 +27,8 @@
 #set text(lang: "en", size: 12pt)
 #set text(ligatures: true)
 #set text(font: "New Computer Modern Sans")
+#set list(indent: 2em)
+#set enum(indent: 2em)
 
 #show: exzellenz-tum-thesis.with(
   degree: "Master",
@@ -38,8 +40,6 @@
   title-en: "Addressing Volumetric Bias in Multi-Instance Semantic Segmentation Using Voronoi Tessellation",
   title-de: "Adressierung volumetrischer Befangenheit in Multi-Instanz-Semantischer Segmentierung durch Voronoi-Tessellation",
   abstract-text: [
-   TODO: Make this left-aligned instead of
-
    #lorem(30)
   ],
   submission-date: datetime.today().display("[day].[month].[year]"),
@@ -81,7 +81,7 @@
   if (it.has("depth")) {
     if it.depth == 1 [Chapter] else if it.depth == 2 [Section] else [Subsection]
   } else {
-    [ERROR, this should not happen]
+     [Appendix]
   }
 })
 
@@ -144,15 +144,19 @@
 
 // --- Appendices ---
 
-// restart page numbering using roman numbers
+// Restart page numbering using roman numerals
 #set page(numbering: "i")
 #counter(page).update(1)
+#counter(heading).update(0)
 
-
+// Reset figure/table counters
+// Redefine supplement + numbering for appendix
+#show figure: set figure(
+  numbering: n => "A." + str(n)
+)
 #include "chapters/A1_Appendix.typ"
 
-// List of Acronyms.
-
+// List of Acronyms.  
 #heading(numbering: none)[Glossary]
 
 #print-glossary(
