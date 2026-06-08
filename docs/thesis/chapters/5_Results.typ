@@ -2,25 +2,25 @@
 #import "../figures/results/combinedtableloss.typ": importantresults-table_loss_combos
 #import "../figures/results/combinedtableweights.typ": importantresults-table_weight_maps
 
-= Results <sec_results>
+= Results <chap_results>
 In this section we present the effects of the previously introduced Voronoi-based tessellation approaches on the various datasets introduced in @sec_datasets. We evaluate all approaches using several global- and instance-wise metrics.
 
-In @sec_losscombinations we show the results of different compound loss formulations. Each dataset was trained using the total loss function from @eqtotalloss with different losses for $cal(L)_"global"$ and $cal(L)_"Voronoi"$ or different weights $alpha$, $beta$.
+In @sec_losscombos_results we show the results of different compound loss formulations. Each dataset was trained using the total loss function from @eqtotalloss with different losses for $cal(L)_"global"$ and $cal(L)_"Voronoi"$ or different weights $hat(alpha)$, $hat(beta)$. Recall that $hat(alpha)$, $hat(beta)$ are scaled in the actual optimization step according to @eqgloballocalweights.
 
 @sec_weightmaps_results shows further evaluations using precomputed weight maps on applied the baseline loss of global DiceCE.
 
 Full tables of several additional metrics evaluated across all datasets is given in the supplementary material @Appendix_A along with additional charts.
 
-== Loss Combinations <sec_losscombinations>
+== Loss Combinations <sec_losscombos_results>
 
-Various metrics from all datasets are combined in @taballlosscombos. Metrics were calculated on the test set with each model trained with a different loss configuration. No weight maps were applied during any training.
+Various metrics from all datasets are combined in @taballlosscombos. Metrics were calculated on the unseen test set with each model having been trained with a different loss configuration. No weight maps were applied during any training in this section.
 
-Overall, introducing a voronoi-based loss function component improves many metrics across all datasets in both 2D and 3D. Apart from @rq in the mitochondria dataset, the best scores in every other dataset and metric are in a combination that utilizes some form of region-wise loss. Additionally, global metrics such as @dsc as well as instance-wise (e.g. @sqassd) and the region-wise CCDice show improvements across all datsets.
+Overall, introducing a Voronoi-based loss function component improves many metrics across all datasets in both 2D and 3D. Apart from @rq in the mitochondria dataset, the best scores in every other dataset and metric are in a combination that utilizes some form of region-wise loss. Additionally, global metrics such as @dsc as well as instance-wise (e.g. @sqassd) and the region-wise CCDice show improvements across all datsets.
 
 #context text(size: 10pt)[
   #figure(
     importantresults-table_loss_combos(),
-    caption: [Results for all datasets across various metrics when changing loss weightings and different compound loss functions using only global DiceCE as a baseline. The first entry of a loss configuration tuple describes $alpha*cal(L)_"global"$, the second $beta*cal(L)_"Voronoi"$. Improvements are shown as relative deltas to the baseline in green, metrics that have worsened are shown in red. The best value in each metric is emphasized in bold. Result rows are grouped by their dataset.],
+    caption: [Results for all datasets across various metrics when changing loss weightings and different compound loss functions using only global DiceCE as a baseline. The first entry of a loss configuration tuple describes $hat(alpha)*cal(L)_"global"$, the second $hat(beta)*cal(L)_"Voronoi"$. Improvements are shown as relative deltas to the baseline in green, metrics that have worsened are shown in red. The best value in each metric is emphasized in bold. Result rows are grouped by their dataset.],
   )<taballlosscombos>]
 
 Introduction of region-wise losses has, however, a detrimental impact on training performance, increasing the time per train epoch. @figtimeperepoch shows the effect clearly, with the global-only DiceCE requiring the lowest amount of time to train on all 2D and 3D datasets.
@@ -55,13 +55,13 @@ Improvements in instance recall, however, are juxtaposed by worsening of the ins
 #figure(
   image("../figures/results/mets/lollipop/loss_combos/precision_inst.png", width: 65%),
 
-  caption: [Comparison of @mets dataset instance precision against the global-only DiceCE baseline of 0.875 when trained with region-wise losses with various combinations and weights.
+  caption: [Comparison of @mets dataset instance precision against the global-only DiceCE baseline when trained with region-wise losses with various combinations and weights.
   ],
 ) <figmetsinstanceprecision>
 
 This notwithstanding, @rq:long, the harmonic mean between $"recall"_"inst"$ and $"precision"_"inst"$, improved in almost all alternative configurations except region-only DiceCE.
 
-Given the high-stakes domain of brain cancer metastses, predicting no cancer lesions at all can be seen as a fatal flaw in any model, it is therefore also important to examine the number of cases where a model evaluated a patient as cancer-free (i.e. the set of all connected components on the prediction $hat(Y)$ is empty, or: $hat(I) = emptyset$). These cases do not exist in the dataset, with each scanned patient exhibiting at least 1 metastasized tumor. Of all tested combinations, only the baseline of the purely global DiceCE failed to predict any cancerous lesions in 2 patients. #todo("Put this in a table or otherwise show this somehow? Or does text suffice?")
+Given the high-stakes domain of brain cancer metastses, predicting no cancer lesions at all can be seen as a fatal flaw in any model, it is therefore also important to examine the number of cases where a model evaluated a patient as cancer-free (i.e. the set of all connected components on the prediction $hat(Y)$ is empty, or: $hat(I) = emptyset$). These cases do not exist in the dataset, with each scanned patient exhibiting at least 1 metastasized tumor. Of all tested combinations, only the baseline of the purely global DiceCE failed to predict any cancerous lesions in 2 patients.
 
 === White Matter Hyperintensities <sec_wmhlossresults>
 The @wmh:long (@wmh) datset is the second 3D dataset under evaluation. As with @mets, @taballlosscombos show that key metrics in all categories of global, instance-wise and region-wise are improved when training with the voronoi loss paradigm. @dsc however, only showed improvements over the baseline when the global loss component received double the weight of the the region-wise component.
@@ -86,16 +86,15 @@ The @wmh:long (@wmh) datset is the second 3D dataset under evaluation. As with @
 === Platelet Organelles
 Both @cv:long and @ag:long are organelles in platelet cells and their segmentation in 2D images provides a comparison how segmentation models perform on the same images given different segmentation targets.
 
-The evaluation results of the @cv dataset remain relatively consistent, showing only relatively small improvements in many metrics present in @taballlosscombos. However, consistent gains can again be seen across all metric categories. Solely instance recall is unable to improve consistently, showing both very slight occasional decreases of up to 0.03% as well as improvements of up to 1%.
+The evaluation results of the @cv dataset remain relatively consistent, showing only relatively small improvements in many metrics present in @taballlosscombos. However, consistent gains can again be seen across all metric categories. Solely instance recall is unable to improve consistently, showing both very slight occasional decreases as well improvements.
 
 Baseline segmentation of alpha granules showed improved @dsc compared to @cv (0.813 vs. 0.804), but lower @rq at 0.746 vs 0.875. The recall of alpha granule instances is also significantly lower with the model being able to predict only 77% of instances compared to the 91.3% of canalicular vessel organelles. However, instance recall of @ag was increased by 0.105 when training with region-wise DiceCE instead of global DiceCE.
 
 === Mitochondria <sec_mitlossresults>
-The EPFL mitochondria (@mit) dataset shows the highest baseline performance across all metrics and datasets in @taballlosscombos, showing that the baseline model is already able to provide a highly accurate segmentation both pixel- and instance-wise. This notwithstanding, region-wise losses are still able to improve several key metrics such as instance recall and CCDice. @Sqassd was also consistently decreased, reducing segmentation boundary errors in the configuration (DiceCE, DicecE).
-
+The EPFL mitochondria (@mit) dataset shows the highest baseline performance across all metrics and datasets in @taballlosscombos, showing that the baseline model is already able to provide a highly accurate segmentation both pixel- and instance-wise. This notwithstanding, region-wise losses are still able to improve several key metrics such as instance recall and CCDice. @Sqassd was also consistently decreased, reducing segmentation boundary errors in the configuration (DiceCE, DiceCE). @rq:long, however, reduces consistently across all region-wise loss combinations.
 
 == Weight Maps<sec_weightmaps_results>
-In addition to evaluating several combinations of region-wise losses, all weight maps introduced in @sec_weight_maps_method were compared against the same baseline of global DiceCE without region-wise loss. As with the comparison of the loss combinations, @taballweightmaps shows the same metrics across all 5 evaluated datasets.
+In addition to evaluating several region-wise loss variations, all weight maps introduced in @sec_weight_maps_method were compared against the same baseline of global DiceCE without region-wise loss. As with the comparison of the loss combinations, @taballweightmaps shows the same metrics across all 5 evaluated datasets.
 
 Over all datasets, weight maps were selectively able to improve several segmentation metrics. The @wmh dataset was improved in almost all metrics when $"W"_"v_mountains"$ was applied during training with instance recall improving by 0.361 over the baseline of 0.315, @sqassd was also improved greatly, reducing the distance of surfaces by 0.665 over the 1.173 baseline. CCDice results were also more than doubled. While $"W"_"v_mountains"$ also improved several metrics in the @mets dataset, @rq drops by 0.193.
 
@@ -103,17 +102,14 @@ The stark differences in evaluation results in the 3D datasets point toward a fu
 
 Notably, $"W"_"v_iw"$ improved instance recall on brain metastases by 0.307, for a total value of 0.955, meaning that over 95% of metastases were located. However, all other metrics in the dataset decreased when applying Voronoi inverse weighting with @rq dropping to a total value of 0.03. This is a sign of severe over-prediction, producing a large number of false positive instances.
 
-The 2D datasets already exhibited a higher baseline segmentation performance, with weight maps only being able to marginally improve metrics and often worsening them.
+The 2D datasets already exhibited a higher baseline segmentation performance, with weight maps only being able to marginally improve metrics and often worsening them. However, in @ag adaptive weighting based on the models current prediction showed general increases in @dsc (+0.012), @rq (+0.022), instance recall (+0.037) and CCDice (+0.027), worsening @sqassd slightly (+0.015).
+
+The @dsc of mitochondria segmentation could not be improved upon by the introduction of weight maps, although $"W"_"v_adaptive"$ could match it at 0.944 as well as improve @sqassd (-0.33), instance recall (+0.017) and CCDice (+0.019) at the cost of slighlty decreasing @rq (-0.25).
+
+#todo("this seems quite repetitive with the quotation of numbers, how can I improve this?")
 
 #context text(size: 10pt)[
   #figure(
     importantresults-table_weight_maps(),
     caption: [Results for all datasets across various metrics when training with different weight maps. Baseline values are computed on global-only DiceCE without a weight map, all other maps were applied to the same loss. Improvements are shown as relative deltas to the baseline in green, metrics that have worsened are shown in red. The best value in each metric is emphasized in bold. Result rows are grouped by their dataset.],
   )<taballweightmaps>]
-
-=== Canalicular Vessels <sec_cvwmapresults>
-=== Alpha Granules <sec_agwmapresults>
-
-=== Mitochondria <sec_mitwmapresults>
-
-#todo("The effect of false instance removal on partitioning and weight maps in 2D")

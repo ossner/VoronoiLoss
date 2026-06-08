@@ -20,6 +20,7 @@
     [CETversky, DiceTversky],
   ),
 
+  table.hline(start: 1, stroke: 1.5pt + luma(150)),
   table.cell(
     rowspan: 5, 
     align: center + horizon,

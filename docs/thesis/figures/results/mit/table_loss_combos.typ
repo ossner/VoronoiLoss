@@ -4,7 +4,7 @@
   align: (left, center, center, center, center, center, center, center, ),
   stroke: (
     x: none,
-    y: 0.4pt + luma(220),
+    y: 1pt + luma(220),
   ),
   inset: 8pt,
 
@@ -38,6 +38,26 @@
   [#delta(+0.007)],
   [#delta(+0.009)],
   [#text(size: 10.5pt)[*#delta(+0.014)*]],
+
+  // test/global/precision
+  [precision],
+  [#text(size: 10.5pt)[*0.948*]],
+  [#delta(-0.011)],
+  [#delta(-0.006)],
+  [#delta(-0.008)],
+  [#delta(-0.007)],
+  [#delta(-0.013)],
+  [#delta(-0.027)],
+
+  // test/global/recall
+  [recall],
+  [0.942],
+  [#delta(+0.015)],
+  [#delta(+0.008)],
+  [#delta(+0.001)],
+  [#delta(+0.010)],
+  [#delta(+0.015)],
+  [#text(size: 10.5pt)[*#delta(+0.024)*]],
 
   // test/instance/f1
   [RQ],
@@ -89,46 +109,6 @@
   [#delta(+0.017)],
   [#delta(+0.018)],
 
-  // test/instance/recall_q0
-  [$"recall"_"inst"_"Q1"$],
-  [0.863],
-  [#text(size: 10.5pt)[*#delta(+0.087)*]],
-  [#delta(+0.046)],
-  [#delta(+0.043)],
-  [#delta(+0.072)],
-  [#delta(+0.053)],
-  [#delta(+0.066)],
-
-  // test/instance/recall_q1
-  [$"recall"_"inst"_"Q2"$],
-  [0.997],
-  [#text(size: 10.5pt)[*#delta(+0.003)*]],
-  [#delta(-0.004)],
-  [#delta(-0.006)],
-  [#delta(-0.004)],
-  [#text(size: 10.5pt)[*#delta(+0.003)*]],
-  [#delta(-0.004)],
-
-  // test/instance/recall_q2
-  [$"recall"_"inst"_"Q3"$],
-  [#text(size: 10.5pt)[*1.000*]],
-  [#text(size: 10.5pt)[*#delta(+0.000)*]],
-  [#text(size: 10.5pt)[*#delta(+0.000)*]],
-  [#text(size: 10.5pt)[*#delta(+0.000)*]],
-  [#text(size: 10.5pt)[*#delta(+0.000)*]],
-  [#text(size: 10.5pt)[*#delta(+0.000)*]],
-  [#text(size: 10.5pt)[*#delta(+0.000)*]],
-
-  // test/instance/recall_q3
-  [$"recall"_"inst"_"Q4"$],
-  [#text(size: 10.5pt)[*1.000*]],
-  [#text(size: 10.5pt)[*#delta(+0.000)*]],
-  [#text(size: 10.5pt)[*#delta(+0.000)*]],
-  [#text(size: 10.5pt)[*#delta(+0.000)*]],
-  [#text(size: 10.5pt)[*#delta(+0.000)*]],
-  [#text(size: 10.5pt)[*#delta(+0.000)*]],
-  [#text(size: 10.5pt)[*#delta(+0.000)*]],
-
   // test/cc/dice
   [CCDice],
   [0.896],
@@ -138,24 +118,4 @@
   [#delta(+0.021)],
   [#delta(+0.018)],
   [#delta(+0.018)],
-
-  // test/global/precision
-  [precision],
-  [#text(size: 10.5pt)[*0.948*]],
-  [#delta(-0.011)],
-  [#delta(-0.006)],
-  [#delta(-0.008)],
-  [#delta(-0.007)],
-  [#delta(-0.013)],
-  [#delta(-0.027)],
-
-  // test/global/recall
-  [recall],
-  [0.942],
-  [#delta(+0.015)],
-  [#delta(+0.008)],
-  [#delta(+0.001)],
-  [#delta(+0.010)],
-  [#delta(+0.015)],
-  [#text(size: 10.5pt)[*#delta(+0.024)*]],
 )

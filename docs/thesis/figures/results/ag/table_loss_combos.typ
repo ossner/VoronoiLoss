@@ -4,7 +4,7 @@
   align: (left, center, center, center, center, center, center, center, ),
   stroke: (
     x: none,
-    y: 0.4pt + luma(220),
+    y: 1pt + luma(220),
   ),
   inset: 8pt,
 
@@ -38,6 +38,26 @@
   [#delta(+0.001)],
   [#delta(+0.012)],
   [#delta(+0.025)],
+
+  // test/global/precision
+  [precision],
+  [#text(size: 10.5pt)[*0.838*]],
+  [#delta(-0.031)],
+  [#delta(-0.006)],
+  [#delta(-0.012)],
+  [#delta(-0.010)],
+  [#delta(-0.035)],
+  [#delta(-0.050)],
+
+  // test/global/recall
+  [recall],
+  [0.817],
+  [#text(size: 10.5pt)[*#delta(+0.046)*]],
+  [#delta(+0.014)],
+  [#delta(+0.006)],
+  [#delta(+0.004)],
+  [#delta(+0.024)],
+  [#delta(+0.045)],
 
   // test/instance/f1
   [RQ],
@@ -89,46 +109,6 @@
   [#delta(+0.062)],
   [#delta(+0.058)],
 
-  // test/instance/recall_q0
-  [$"recall"_"inst"_"Q1"$],
-  [0.360],
-  [#text(size: 10.5pt)[*#delta(+0.257)*]],
-  [#delta(+0.108)],
-  [#delta(+0.177)],
-  [#delta(+0.160)],
-  [#delta(+0.177)],
-  [#delta(+0.141)],
-
-  // test/instance/recall_q1
-  [$"recall"_"inst"_"Q2"$],
-  [0.882],
-  [#delta(+0.063)],
-  [#delta(+0.047)],
-  [#delta(+0.024)],
-  [#delta(+0.024)],
-  [#text(size: 10.5pt)[*#delta(+0.074)*]],
-  [#delta(+0.068)],
-
-  // test/instance/recall_q2
-  [$"recall"_"inst"_"Q3"$],
-  [0.939],
-  [#text(size: 10.5pt)[*#delta(+0.043)*]],
-  [#delta(+0.042)],
-  [#delta(+0.031)],
-  [#delta(+0.021)],
-  [#delta(+0.005)],
-  [#delta(+0.032)],
-
-  // test/instance/recall_q3
-  [$"recall"_"inst"_"Q4"$],
-  [0.983],
-  [#text(size: 10.5pt)[*#delta(+0.017)*]],
-  [#delta(+0.000)],
-  [#delta(-0.017)],
-  [#delta(-0.047)],
-  [#delta(-0.008)],
-  [#delta(+0.008)],
-
   // test/cc/dice
   [CCDice],
   [0.630],
@@ -138,24 +118,4 @@
   [#delta(+0.030)],
   [#delta(+0.031)],
   [#delta(+0.040)],
-
-  // test/global/precision
-  [precision],
-  [#text(size: 10.5pt)[*0.838*]],
-  [#delta(-0.031)],
-  [#delta(-0.006)],
-  [#delta(-0.012)],
-  [#delta(-0.010)],
-  [#delta(-0.035)],
-  [#delta(-0.050)],
-
-  // test/global/recall
-  [recall],
-  [0.817],
-  [#text(size: 10.5pt)[*#delta(+0.046)*]],
-  [#delta(+0.014)],
-  [#delta(+0.006)],
-  [#delta(+0.004)],
-  [#delta(+0.024)],
-  [#delta(+0.045)],
 )

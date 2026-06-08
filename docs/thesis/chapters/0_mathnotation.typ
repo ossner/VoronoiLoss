@@ -21,7 +21,7 @@
     $I: {I_1, I_2, dots, I_K}$, [The set of $K$ instances in a label $Y$.],
     $R: {R_1, R_2, dots, R_K}$, [The set of voronoi regions in an image with some $R_k$ being seeded by $I_k$],
     $W: {w_1, w_2, dots, w_N | w_n in RR}$, [A weight map of the same shape as $Y$ and $hat(Y)$.],
-    $cal(L):Y times hat(Y) mapsto RR$, [A loss function serving as a learning signal of a segmentation classifier.],
+    $cal(L):Y times tilde(Y) mapsto RR$, [A loss function serving as a learning signal of a segmentation classifier.],
     $cal(I) = {(I_p, I_g) | I_p in hat(I), I_g in I}$, [The set of all matched instances from connected label components $I$ and prediction components $hat(I)$.]
   )
 ]

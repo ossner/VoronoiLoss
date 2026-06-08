@@ -150,6 +150,9 @@
 #counter(heading).update(0)
 
 // Reset figure/table counters
+#counter(figure.where(kind: image)).update(_ => 0)
+#counter(figure.where(kind: table)).update(_ => 0)
+
 // Redefine supplement + numbering for appendix
 #show figure: set figure(
   numbering: n => "A." + str(n)
@@ -157,6 +160,7 @@
 #include "chapters/A1_Appendix.typ"
 
 // List of Acronyms.  
+#context text(size: 10pt)[
 #heading(numbering: none)[Glossary]
 
 #print-glossary(
@@ -181,3 +185,4 @@
 
 #set par(leading: 0.7em, first-line-indent: 0em, justify: true)
 #bibliography("items.bib")
+]

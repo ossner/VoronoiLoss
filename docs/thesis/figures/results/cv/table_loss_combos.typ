@@ -4,7 +4,7 @@
   align: (left, center, center, center, center, center, center, center, ),
   stroke: (
     x: none,
-    y: 0.4pt + luma(220),
+    y: 1pt + luma(220),
   ),
   inset: 8pt,
 
@@ -38,6 +38,26 @@
   [#delta(+0.021)],
   [#delta(+0.028)],
   [#text(size: 10.5pt)[*#delta(+0.043)*]],
+
+  // test/global/precision
+  [precision],
+  [0.847],
+  [#delta(-0.007)],
+  [#delta(+0.003)],
+  [#text(size: 10.5pt)[*#delta(+0.005)*]],
+  [#delta(+0.002)],
+  [#delta(-0.019)],
+  [#delta(-0.027)],
+
+  // test/global/recall
+  [recall],
+  [0.762],
+  [#delta(+0.024)],
+  [#delta(+0.010)],
+  [#delta(+0.011)],
+  [#delta(+0.025)],
+  [#delta(+0.038)],
+  [#text(size: 10.5pt)[*#delta(+0.059)*]],
 
   // test/instance/f1
   [RQ],
@@ -89,46 +109,6 @@
   [#delta(+0.006)],
   [#delta(-0.002)],
 
-  // test/instance/recall_q0
-  [$"recall"_"inst"_"Q1"$],
-  [0.733],
-  [#delta(+0.041)],
-  [#delta(-0.001)],
-  [#delta(+0.001)],
-  [#delta(+0.036)],
-  [#text(size: 10.5pt)[*#delta(+0.058)*]],
-  [#delta(+0.033)],
-
-  // test/instance/recall_q1
-  [$"recall"_"inst"_"Q2"$],
-  [0.955],
-  [#delta(+0.003)],
-  [#delta(-0.015)],
-  [#delta(-0.030)],
-  [#text(size: 10.5pt)[*#delta(+0.004)*]],
-  [#text(size: 10.5pt)[*#delta(+0.004)*]],
-  [#delta(-0.013)],
-
-  // test/instance/recall_q2
-  [$"recall"_"inst"_"Q3"$],
-  [0.943],
-  [#delta(-0.011)],
-  [#delta(-0.002)],
-  [#delta(-0.002)],
-  [#delta(+0.006)],
-  [#text(size: 10.5pt)[*#delta(+0.007)*]],
-  [#delta(-0.001)],
-
-  // test/instance/recall_q3
-  [$"recall"_"inst"_"Q4"$],
-  [#text(size: 10.5pt)[*0.983*]],
-  [#delta(-0.021)],
-  [#delta(-0.003)],
-  [#delta(-0.005)],
-  [#delta(-0.003)],
-  [#delta(-0.009)],
-  [#delta(-0.008)],
-
   // test/cc/dice
   [CCDice],
   [0.726],
@@ -138,24 +118,4 @@
   [#delta(+0.019)],
   [#delta(+0.019)],
   [#text(size: 10.5pt)[*#delta(+0.025)*]],
-
-  // test/global/precision
-  [precision],
-  [0.847],
-  [#delta(-0.007)],
-  [#delta(+0.003)],
-  [#text(size: 10.5pt)[*#delta(+0.005)*]],
-  [#delta(+0.002)],
-  [#delta(-0.019)],
-  [#delta(-0.027)],
-
-  // test/global/recall
-  [recall],
-  [0.762],
-  [#delta(+0.024)],
-  [#delta(+0.010)],
-  [#delta(+0.011)],
-  [#delta(+0.025)],
-  [#delta(+0.038)],
-  [#text(size: 10.5pt)[*#delta(+0.059)*]],
 )
