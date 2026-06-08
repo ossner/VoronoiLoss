@@ -309,10 +309,16 @@ class InstanceSegmentationModel(pl.LightningModule):
         self.dice.reset()
         self.f2.reset()
         self.quartile_recalls = {
-            "q0": [],
-            "q1": [],
-            "q2": [],
-            "q3": []
+            "Q1": [],
+            "Q2": [],
+            "Q3": [],
+            "Q4": [],
+        }
+        self.quartile_sqdsc = {
+            "Q1": [],
+            "Q2": [],
+            "Q3": [],
+            "Q4": [],
         }
         self.aggregator = Panoptica_Aggregator(
             panoptica_evaluator=self.evaluator, output_file=f'{self.logger.log_dir}/eval.tsv')
@@ -374,14 +380,16 @@ class InstanceSegmentationModel(pl.LightningModule):
         for i, gt_q in enumerate(gt_quartiles):
             if np.sum(gt_q) == 0:
                 continue
-            self.quartile_recalls[f"q{i}"].append(self.evaluator.evaluate(
+            self.quartile_recalls[f"Q{i+1}"].append(self.evaluator.evaluate(
                 preds, gt_q, log_times=False, verbose=False)['instance'].rec)
-
+            self.quartile_sqdsc[f"Q{i+1}"].append(self.evaluator.evaluate(
+                preds, gt_q, log_times=False, verbose=False)['instance'].sq_dsc)
     def on_test_epoch_end(self):
         statistics_obj = Panoptica_Statistic.from_file(f'{self.logger.log_dir}/eval.tsv')
         summary = statistics_obj.get_summary_dict(
             include_across_group=False)['instance']
         mean_quartile_recall = {}
+        mean_quartile_sqdsc = {}
 
         for q in self.quartile_recalls:
             values = self.quartile_recalls[q]
@@ -389,6 +397,13 @@ class InstanceSegmentationModel(pl.LightningModule):
                 mean_quartile_recall[q] = 0
             else:
                 mean_quartile_recall[q] = np.mean(values)
+        
+        for q in self.quartile_sqdsc:
+            values = self.quartile_sqdsc[q]
+            if len(values) == 0:
+                mean_quartile_sqdsc[q] = 0
+            else:
+                mean_quartile_sqdsc[q] = np.mean(values)
 
         metrics_to_log = {
             "test/global/dice":           self.dice.aggregate().item(),
@@ -401,10 +416,14 @@ class InstanceSegmentationModel(pl.LightningModule):
             "test/instance/fp":           summary['fp'].avg,
             "test/instance/fn":           summary['fn'].avg,
             "test/instance/precision":    summary['prec'].avg,
-            "test/instance/recall_q0":    mean_quartile_recall['q0'],
-            "test/instance/recall_q1":    mean_quartile_recall['q1'],
-            "test/instance/recall_q2":    mean_quartile_recall['q2'],
-            "test/instance/recall_q3":    mean_quartile_recall['q3'],
+            "test/instance/recall_Q1":    mean_quartile_recall['Q1'],
+            "test/instance/recall_Q2":    mean_quartile_recall['Q2'],
+            "test/instance/recall_Q3":    mean_quartile_recall['Q3'],
+            "test/instance/recall_Q4":    mean_quartile_recall['Q4'],
+            "test/instance/SQDSC_Q1":    mean_quartile_recall['Q1'],
+            "test/instance/SQDSC_Q2":    mean_quartile_recall['Q2'],
+            "test/instance/SQDSC_Q3":    mean_quartile_recall['Q3'],
+            "test/instance/SQDSC_Q4":    mean_quartile_recall['Q4'],
             "test/instance/recall":       summary['rec'].avg,
             "test/instance/f1":           summary['rq'].avg,
             "test/instance/assd":         summary['sq_assd'].avg,
