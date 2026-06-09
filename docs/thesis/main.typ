@@ -29,6 +29,9 @@
 #set text(font: "New Computer Modern Sans")
 #set list(indent: 2em)
 #set enum(indent: 2em)
+#show table.cell: set text(size: 10pt)
+#show figure.caption: set text(size: 11pt)
+
 
 #show: exzellenz-tum-thesis.with(
   degree: "Master",
@@ -160,12 +163,11 @@
 #include "chapters/A1_Appendix.typ"
 
 // List of Acronyms.  
-#context text(size: 10pt)[
+#context text(size: 11pt)[
 #heading(numbering: none)[Glossary]
 
 #print-glossary(
   entry-list,
-  show-all: true,
 )
 // List of figures.
 #heading(numbering: none)[List of Figures]
@@ -184,5 +186,5 @@
 // --- Bibliography ---
 
 #set par(leading: 0.7em, first-line-indent: 0em, justify: true)
-#bibliography("items.bib")
+#bibliography("items.bib", style: "association-for-computing-machinery")
 ]

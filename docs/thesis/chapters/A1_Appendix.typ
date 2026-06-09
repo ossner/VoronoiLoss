@@ -12,145 +12,174 @@
 
 This appendix provides additional results, tables and charts for deeper examination. All metrics, datasets and abbreviations introduced in the main text are used without modification.
 
-#context text(size: 10pt)[
   #figure(metsresults-table_loss_combos(),
   caption: [Complete results table of the @mets dataset across various loss and weight combinations. All results are evaluated against a global-only DiceCE loss and their relative changes are reported. Improvements over the baseline are shown in green, negligeable changes in metrics are shown in gray and worsening metrics in red. The best result for each metric is emphasized in bold.
   ],
-)<tabmetslosscombos>]
+)<tabmetslosscombos>
+
 #figure(
-    grid(
-    columns: 2,
-    align: center + horizon,
-    column-gutter: -15mm,
-
-    // Top row
-    image("../figures/results/mets/lollipop/loss_combos/DSC.png", width: 80%),
-    image("../figures/results/mets/lollipop/loss_combos/F2.png", width: 80%),
-    image("../figures/results/mets/lollipop/loss_combos/RQ.png", width: 80%),
-    image("../figures/results/mets/lollipop/loss_combos/CCDice.png", width: 80%),
-    image("../figures/results/mets/lollipop/loss_combos/SQDSC.png", width: 80%),
-    image("../figures/results/mets/lollipop/loss_combos/SQASSD.png", width: 80%),
-  ),
-  caption: [Loss combination lollipop charts of @mets dataset. Improvements are shown in green over the baseline loss of standard global DiceCE.
+    image("../figures/results/mets/lollipop/loss_combos/quartile_SQDSC_comparison.png", width: 95%),
+  caption: [Loss combination lollipop charts of @mets dataset measuring @sqdsc by instance volume quartiles. Baseline values for each quartile are given by dashed lines. Improvements are shown in green over the baseline loss of standard global DiceCE.
   ],
-) <figmetsresultslollipoplosscombos>
+) <figmetsresultslollipopsqdsc>
 
-#context text(size: 10pt)[
+// #figure(
+//     grid(
+//     columns: 2,
+//     align: center + horizon,
+//     column-gutter: -15mm,
+
+//     // Top row
+//     image("../figures/results/mets/lollipop/loss_combos/DSC.png", width: 80%),
+//     image("../figures/results/mets/lollipop/loss_combos/F2.png", width: 80%),
+//     image("../figures/results/mets/lollipop/loss_combos/RQ.png", width: 80%),
+//     image("../figures/results/mets/lollipop/loss_combos/CCDice.png", width: 80%),
+//     image("../figures/results/mets/lollipop/loss_combos/SQDSC.png", width: 80%),
+//     image("../figures/results/mets/lollipop/loss_combos/SQASSD.png", width: 80%),
+//   ),
+//   caption: [Loss combination lollipop charts of @mets dataset. Improvements are shown in green over the baseline loss of standard global DiceCE.
+//   ],
+// ) <figmetsresultslollipoplosscombos>
+
   #figure(wmhresults-table_loss_combos(),
-  caption: [Complete results table of the @wmh dataset across various loss and weight combinations.
+  caption: [Complete results table of the @wmh dataset across various loss and weight combinations. All results are evaluated against a global-only DiceCE loss and their relative changes are reported. Improvements over the baseline are shown in green, negligeable changes in metrics are shown in gray and worsening metrics in red. The best result for each metric is emphasized in bold.
   ],
-)<tabwmhlosscombos>]
+)<tabwmhlosscombos>
 
 #figure(
-    grid(
-    columns: 2,
-    align: center + horizon,
-    column-gutter: -15mm,
-
-    // Top row
-    image("../figures/results/wmh/lollipop/loss_combos/DSC.png", width: 80%),
-    image("../figures/results/wmh/lollipop/loss_combos/F2.png", width: 80%),
-    image("../figures/results/wmh/lollipop/loss_combos/RQ.png", width: 80%),
-    image("../figures/results/wmh/lollipop/loss_combos/CCDice.png", width: 80%),
-    image("../figures/results/wmh/lollipop/loss_combos/SQDSC.png", width: 80%),
-    image("../figures/results/wmh/lollipop/loss_combos/SQASSD.png", width: 80%),
-
-    grid.cell(
-      colspan: 2,
-      align: center,
-    image("../figures/results/wmh/lollipop/loss_combos/quartile_recall_comparison.png", width: 90%),
-    ),
-  ),
-  caption: [Loss combination lollipop charts of @wmh dataset. Improvements are shown in green over the baseline loss of standard global DiceCE.
+    image("../figures/results/wmh/lollipop/loss_combos/quartile_SQDSC_comparison.png", width: 95%),
+  caption: [Loss combination lollipop charts of @wmh dataset measuring @sqdsc by instance volume quartiles. Baseline values for each quartile are given by dashed lines. Improvements are shown in green over the baseline loss of standard global DiceCE.
   ],
-) <figwmhresultslollipoplosscombos>
+) <figwmhresultslollipopsqdsc>
+
+// #figure(
+//     grid(
+//     columns: 2,
+//     align: center + horizon,
+//     column-gutter: -15mm,
+
+//     // Top row
+//     image("../figures/results/wmh/lollipop/loss_combos/DSC.png", width: 80%),
+//     image("../figures/results/wmh/lollipop/loss_combos/F2.png", width: 80%),
+//     image("../figures/results/wmh/lollipop/loss_combos/RQ.png", width: 80%),
+//     image("../figures/results/wmh/lollipop/loss_combos/CCDice.png", width: 80%),
+//     image("../figures/results/wmh/lollipop/loss_combos/SQDSC.png", width: 80%),
+//     image("../figures/results/wmh/lollipop/loss_combos/SQASSD.png", width: 80%),
+
+//     grid.cell(
+//       colspan: 2,
+//       align: center,
+//     image("../figures/results/wmh/lollipop/loss_combos/quartile_recall_comparison.png", width: 90%),
+//     ),
+//   ),
+//   caption: [Loss combination lollipop charts of @wmh dataset. Improvements are shown in green over the baseline loss of standard global DiceCE.
+//   ],
+// ) <figwmhresultslollipoplosscombos>
 
 
-#context text(size: 10pt)[
   #figure(cvresults-table_loss_combos(),
-  caption: [Complete results table of the @cv dataset across various loss and weight combinations.
+  caption: [Complete results table of the @cv dataset across various loss and weight combinations. All results are evaluated against a global-only DiceCE loss and their relative changes are reported. Improvements over the baseline are shown in green, negligeable changes in metrics are shown in gray and worsening metrics in red. The best result for each metric is emphasized in bold.
   ],
-)<tabcvlosscombos>]
+)<tabcvlosscombos>
 
 #figure(
-    grid(
-    columns: 2,
-    align: center + horizon,
-    column-gutter: -15mm,
-
-    // Top row
-    image("../figures/results/cv/lollipop/loss_combos/DSC.png", width: 80%),
-    image("../figures/results/cv/lollipop/loss_combos/F2.png", width: 80%),
-    image("../figures/results/cv/lollipop/loss_combos/RQ.png", width: 80%),
-    image("../figures/results/cv/lollipop/loss_combos/CCDice.png", width: 80%),
-    image("../figures/results/cv/lollipop/loss_combos/SQDSC.png", width: 80%),
-    image("../figures/results/cv/lollipop/loss_combos/SQASSD.png", width: 80%),
-
-    grid.cell(
-      colspan: 2,
-      align: center,
-    image("../figures/results/cv/lollipop/loss_combos/quartile_recall_comparison.png", width: 90%),
-    ),
-  ),
-  caption: [Loss combination lollipop charts of @cv dataset. Improvements are shown in green over the baseline loss of standard global DiceCE.
+    image("../figures/results/cv/lollipop/loss_combos/quartile_SQDSC_comparison.png", width: 95%),
+  caption: [Loss combination lollipop charts of @cv dataset measuring @sqdsc by instance volume quartiles. Baseline values for each quartile are given by dashed lines. Improvements are shown in green over the baseline loss of standard global DiceCE.
   ],
-) <figcvresultslollipoplosscombos>
+) <figcvresultslollipopsqdsc>
 
-#context text(size: 10pt)[
+// #figure(
+//     grid(
+//     columns: 2,
+//     align: center + horizon,
+//     column-gutter: -15mm,
+
+//     // Top row
+//     image("../figures/results/cv/lollipop/loss_combos/DSC.png", width: 80%),
+//     image("../figures/results/cv/lollipop/loss_combos/F2.png", width: 80%),
+//     image("../figures/results/cv/lollipop/loss_combos/RQ.png", width: 80%),
+//     image("../figures/results/cv/lollipop/loss_combos/CCDice.png", width: 80%),
+//     image("../figures/results/cv/lollipop/loss_combos/SQDSC.png", width: 80%),
+//     image("../figures/results/cv/lollipop/loss_combos/SQASSD.png", width: 80%),
+
+//     grid.cell(
+//       colspan: 2,
+//       align: center,
+//     image("../figures/results/cv/lollipop/loss_combos/quartile_recall_comparison.png", width: 90%),
+//     ),
+//   ),
+//   caption: [Loss combination lollipop charts of @cv dataset. Improvements are shown in green over the baseline loss of standard global DiceCE.
+//   ],
+// ) <figcvresultslollipoplosscombos>
+
   #figure(agresults-table_loss_combos(),
-  caption: [Complete results table of the @ag dataset across various loss and weight combinations.
+  caption: [Complete results table of the @ag dataset across various loss and weight combinations. All results are evaluated against a global-only DiceCE loss and their relative changes are reported. Improvements over the baseline are shown in green, negligeable changes in metrics are shown in gray and worsening metrics in red. The best result for each metric is emphasized in bold.
   ],
-)<tabaglosscombos>]
+)<tabaglosscombos>
+
 
 #figure(
-    grid(
-    columns: 2,
-    align: center + horizon,
-    column-gutter: -15mm,
+    image("../figures/results/ag/lollipop/loss_combos/quartile_SQDSC_comparison.png", width: 95%),
+  caption: [Loss combination lollipop charts of @ag dataset measuring @sqdsc by instance volume quartiles. Baseline values for each quartile are given by dashed lines. Improvements are shown in green over the baseline loss of standard global DiceCE.
+  ],
+) <figagresultslollipopsqdsc>
 
-    // Top row
-    image("../figures/results/ag/lollipop/loss_combos/DSC.png", width: 80%),
-    image("../figures/results/ag/lollipop/loss_combos/F2.png", width: 80%),
-    image("../figures/results/ag/lollipop/loss_combos/RQ.png", width: 80%),
-    image("../figures/results/ag/lollipop/loss_combos/CCDice.png", width: 80%),
-    image("../figures/results/ag/lollipop/loss_combos/SQDSC.png", width: 80%),
-    image("../figures/results/ag/lollipop/loss_combos/SQASSD.png", width: 80%),
+// #figure(
+//     grid(
+//     columns: 2,
+//     align: center + horizon,
+//     column-gutter: -15mm,
 
-    grid.cell(
-      colspan: 2,
-      align: center,
-    image("../figures/results/ag/lollipop/loss_combos/quartile_recall_comparison.png", width: 90%),
-    ),
-  ),
-  caption: [Loss combination lollipop charts of @ag dataset. Improvements are shown in green over the baseline loss of standard global DiceCE.],
-) <figagresultslollipoplosscombos>
+//     // Top row
+//     image("../figures/results/ag/lollipop/loss_combos/DSC.png", width: 80%),
+//     image("../figures/results/ag/lollipop/loss_combos/F2.png", width: 80%),
+//     image("../figures/results/ag/lollipop/loss_combos/RQ.png", width: 80%),
+//     image("../figures/results/ag/lollipop/loss_combos/CCDice.png", width: 80%),
+//     image("../figures/results/ag/lollipop/loss_combos/SQDSC.png", width: 80%),
+//     image("../figures/results/ag/lollipop/loss_combos/SQASSD.png", width: 80%),
 
-#context text(size: 10pt)[
+//     grid.cell(
+//       colspan: 2,
+//       align: center,
+//     image("../figures/results/ag/lollipop/loss_combos/quartile_recall_comparison.png", width: 90%),
+//     ),
+//   ),
+//   caption: [Loss combination lollipop charts of @ag dataset. Improvements are shown in green over the baseline loss of standard global DiceCE.],
+// ) <figagresultslollipoplosscombos>
+
   #figure(mitresults-table_loss_combos(),
-  caption: [Complete results table of the @mit dataset across various loss and weight combinations.
+  caption: [Complete results table of the @mit dataset across various loss and weight combinations. All results are evaluated against a global-only DiceCE loss and their relative changes are reported. Improvements over the baseline are shown in green, negligeable changes in metrics are shown in gray and worsening metrics in red. The best result for each metric is emphasized in bold.
   ],
-)<tabmitlosscombos>]
+)<tabmitlosscombos>
+
 
 #figure(
-    grid(
-    columns: 2,
-    align: center + horizon,
-    column-gutter: -15mm,
-
-    // Top row
-    image("../figures/results/mit/lollipop/loss_combos/DSC.png", width: 80%),
-    image("../figures/results/mit/lollipop/loss_combos/F2.png", width: 80%),
-    image("../figures/results/mit/lollipop/loss_combos/RQ.png", width: 80%),
-    image("../figures/results/mit/lollipop/loss_combos/CCDice.png", width: 80%),
-    image("../figures/results/mit/lollipop/loss_combos/SQDSC.png", width: 80%),
-    image("../figures/results/mit/lollipop/loss_combos/SQASSD.png", width: 80%),
-
-    grid.cell(
-      colspan: 2,
-      align: center,
-    image("../figures/results/mit/lollipop/loss_combos/quartile_recall_comparison.png", width: 90%),
-    ),
-  ),
-  caption: [Loss combination lollipop charts of @mit dataset. Improvements are shown in green over the baseline loss of standard global DiceCE.
+    image("../figures/results/mit/lollipop/loss_combos/quartile_SQDSC_comparison.png", width: 95%),
+  caption: [Loss combination lollipop charts of @mit dataset measuring @sqdsc by instance volume quartiles. Baseline values for each quartile are given by dashed lines. Improvements are shown in green over the baseline loss of standard global DiceCE.
   ],
-) <figmitresultslollipoplosscombos>
+) <figmitresultslollipopsqdsc>
+
+
+// #figure(
+//     grid(
+//     columns: 2,
+//     align: center + horizon,
+//     column-gutter: -15mm,
+
+//     // Top row
+//     image("../figures/results/mit/lollipop/loss_combos/DSC.png", width: 80%),
+//     image("../figures/results/mit/lollipop/loss_combos/F2.png", width: 80%),
+//     image("../figures/results/mit/lollipop/loss_combos/RQ.png", width: 80%),
+//     image("../figures/results/mit/lollipop/loss_combos/CCDice.png", width: 80%),
+//     image("../figures/results/mit/lollipop/loss_combos/SQDSC.png", width: 80%),
+//     image("../figures/results/mit/lollipop/loss_combos/SQASSD.png", width: 80%),
+
+//     grid.cell(
+//       colspan: 2,
+//       align: center,
+//     image("../figures/results/mit/lollipop/loss_combos/quartile_recall_comparison.png", width: 90%),
+//     ),
+//   ),
+//   caption: [Loss combination lollipop charts of @mit dataset. Improvements are shown in green over the baseline loss of standard global DiceCE.
+//   ],
+// ) <figmitresultslollipoplosscombos>

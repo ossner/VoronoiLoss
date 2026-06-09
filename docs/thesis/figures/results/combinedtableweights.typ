@@ -5,7 +5,7 @@
   align: (center, left, center, center, center, center, center, center),
   stroke: (
     x: none,
-    y: 0.4pt + luma(220),
+    y: 1pt + luma(220),
   ),
   inset: 6pt,
 

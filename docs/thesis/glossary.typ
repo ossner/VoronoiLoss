@@ -21,25 +21,25 @@
     key: "tp",
     short: "TP",
     long: "true positive",
-    group: "Abbreviations",
+    group: "Metrics",
   ),
   (
     key: "fp",
     short: "FP",
     long: "false positive",
-    group: "Abbreviations",
+    group: "Metrics",
   ),
   (
     key: "fn",
     short: "FN",
     long: "false negative",
-    group: "Abbreviations",
+    group: "Metrics",
   ),
   (
     key: "tn",
     short: "TN",
     long: "true negative",
-    group: "Abbreviations",
+    group: "Metrics",
   ),
   (
     key: "mri",
@@ -57,7 +57,7 @@
     key: "ce",
     short: "CE",
     long: "Cross Entropy",
-    group: "Abbreviations",
+    group: "Metrics",
   ),
   (
     key: "dsc",

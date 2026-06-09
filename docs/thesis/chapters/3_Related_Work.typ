@@ -73,4 +73,3 @@ The hypothesis behind this map is that the model is punished harshly for missing
 When compared to blob loss however, @iw is unable to improve segmentation results @kofler2023blobloss, it nevertheless provides a concrete example of how a weight map can be used to address specific shortcomings of segmentation networks.
 
 This work aims to position itself in the research gap created by these publications, providing a more thorough analysis of the use of voronoi tessellation in loss calculation as well an exploration of possible extensions to improve segmenation in multi-instance problems.
-#todo("Maybe move this sentence to the introduction, maybe keep it. Ask before final submission")

@@ -4,28 +4,27 @@
 = Methodology <chapter_methodology>
 This section gives a description outlining the concrete implementation of the thesis. It gives a comprehensive review of the datasets in @sec_datasets as well as some notions on their fidelity and its consequences. @sec_metrics describes and formalizes the metrics used to evaluate the performance of the experiments and the reasoning behind them. In @sec_loss_functions_method, all used loss functions and their combination into global and local components are described. Additionally, different instance-aware weight maps and their incorporation into these losses are proposed. @sec_modelarchitecture describes the adaptive model architecture used for both 2D and 3D data. Finally, @sec_experimentalsetup describes which experiments have been conducted and why they were chosen.
 
-== Datasets <sec_datasets>
+== Datasets and Instance Statistics <sec_datasets>
 The practical implementation of this thesis was evaluated against multiple datasets that span dimensionality (2D as well as 3D), modality (@mri, @em) and various anatomical features and pathologies that result in highly varied instance properties. By analyzing our performance on these varied datasets we aim to show that the approaches can be used both on macro-scale @mri pathologies as well as micro-scale @em organelles and are therefore generalizable and indifferent to biological dimension as well as imaging technique.
 
-Due to the diverse nature of the underlying data, it is imperative to gather dataset statistics that encapsulate these varied instance properties not only to properly evaluate our fundamental hypotheses, but also to deal with noise and errors during training. In order to investigate why certain approaches worked better than others, concrete information on the size, morphology, distribution, and number of instances must be reported and taken into consideration before accurate conclusions can be drawn. This subsection contains a description of the datasets used, their properties and calculated statistics as well as a comprehensive overview on the estimation of their fidelity.
+Since this thesis concerns binary semantic segmentation, all datasets can be abstracted into their constituent components as follows:
+An image of shape $(n_x,n_y)$ ($(n_x,n_y,n_z)$ in the case of 3D) and a binarized label $Y$ of the same shape for each image.
+
+As introduced in @sec_connectedcomponents, the binary label file can be used to calculate spatially connected instances $I$ using a neighborhood parameter. In this work, 2D connected component analysis exclusively used 8-connectivity, whereas 3D connected components used 26-connectivity (see @figneighborhood for a visual interpretation of these neighborhood parameters).
+
+Due to the diverse nature of the underlying data, it is imperative to gather dataset statistics that encapsulate these varied instance properties to properly evaluate our fundamental hypotheses. 
+
+Prior works in the field have provided comprehensive frameworks for identifying the properties of segmentation masks and how these impact performance reporting @kofler2023panoptica @maier2022metrics. While these works place their focus on the selection and calculation of quantitative segmentation metrics, this section details the instance attributes within each datasets in order to provide context for the interpretation of experimental results.
 
 Specifically, we report the following statistics on multi-instance datasets:
 - Number of instances per sample
 - Volume distribution of instances
 - Instance dominance (what fraction of the total foreground the largest instance takes up)
-- Instance volume as fraction of containing voronoi region volume $(frac(|I_k|,|R_k|-|I_k|))$
+- Instance volume as fraction of containing voronoi region volume
 
 Adhering to current methods and standards, all datasets have been partitioned into a train, validation and test set, with the train set being used for algorithmic model optimization, the validation (val) set being used for hyperparameter tuning such as learning rate adjustment and the test set being used only once to report the final metrics of the model.
 
 All statistics were calculated on the train and val set only to remain agnostic to the test set.
-
-=== On Statistics of Multi-Instance Segmentation Datasets <dataset_fidelity>
-Since this thesis concerns binary semantic segmentation, all datasets can be abstracted into their constituent components as follows:
-An image of shape $(n_x,n_y)$ ($(n_x,n_y,n_z)$ in the case of 3D) and a binarized label $Y$ of the same shape for each image.
-
-As introduced in @sec_connectedcomponents, the binary label file can be used to calculate sptially connected instances $I$ using a neighborhood parameter. In this work, 2D connected component analysis exclusively used 8-connectivity, whereas 3D connected components used 26-connectivity (see @figneighborhood for a visual interpretation of these neighborhood parameters).
-
-The resulting instances have inherent properties that are important to examine, both when formulating hypotheses, as well as investigating noise and segmentation errors. Prior works in the field have provided comprehensive frameworks for identifying the properties of segmentation masks and how these impact performance reporting @kofler2023panoptica @maier2022metrics. While these works place their focus on the selection and calculation of quantitative segmentation metrics, this section details the instance attributes within each datasets in order to provide context for the interpretation of experimental results.
 
 === Brain Metastases
 The Stanford brainmetshare dataset (@mets:short) @brainmetshare consists of 105 labeled MRI scans with multiple co-registered channels depicting the human brain, with binary labels indicating metastatic cancer lesions. The dataset has been randomly split into (train, validation, test) sets with proportions $(0.7, 0.15, 0.15)$ respectively.
@@ -273,6 +272,8 @@ $
   "SQDSC"(cal(I)) = frac(1,|"TP"_"inst"|)sum_((I_p, I_g) in cal(I))"DSC"(I_p, I_g)
 $
 
+Since this metric is calculated only on matched instances, we can again separate the label based on instance volume for the calculation of $("SQDSC"_"Q1", "SQDSC"_"Q2", "SQDSC"_"Q3", "SQDSC"_"Q4")$, to analyze segmentation performance across instance volume quartiles particularly in smaller components to validate our hypotheses of addressing the instance imbalance problem.
+
 === Region-Wise Metrics
 Connected-component metrics are a family of segmentation evaluation statistics introduced by Jaus et al. @jaus2025every that leverage voronoi regions $R$ computed on the labels $Y$ and seeded by the ground truth instances $I$. In an image, each voronoi region $R_k in R$ is considered separately by masking out everything outside the particular region, calculating an arbitrary pixel-wise metric such as @dsc ($F_1$) and averaging the scores across all regions:
 
@@ -451,7 +452,7 @@ $
 @figvadaptive Shows a sample of the weight map that contains prediction outputs from a classifier and how these predictions impact the costruction of the weight map. In this case, the model failed to predict 4 instances, meaning that the regions these instances belong to receive a higher weight. After the specific map has been calculated for all regions in the prediction, it is incorporated into the loss function.
 
 #figure(
-    image("../figures/weight_maps/v_adaptive.png", width: 50%),
+    image("../figures/weight_maps/v_adaptive.png", width: 45%),
   caption: [An overlay of the $"W"_"v_adaptive"$ map over a prediction map of canalicular vessels. If a voronoi region contains a single #box(inset: 0pt, rect(width: 0.8em, height: 0.8em, fill: class_colors.at(0), stroke: 0.1pt)) TP, the weights are set to 1, if all pixels in a regions instance are #box(inset: 0pt, rect(width: 0.8em, height: 0.8em, fill: class_colors.at(1), stroke: 0.1pt)) FN, the weights of the region are set to $beta=4$. After all regions receive their relative weight, the entire map is normalized to make sure its sum is equal to the number of pixels. #box(inset: 0pt, rect(width: 0.8em, height: 0.8em, fill: class_colors.at(2), stroke: 0.1pt)) FP pixels have no impact on the weight map.
   ],
 ) <figvadaptive>
@@ -462,6 +463,8 @@ This section describes the technical setup used in the construction of the train
 The model architecture used in all experiments is based on the U-Net architecture introduced by Ronneberger et al. @ronneberger2015u specifically for the use in biomedical image segmentation. The implementation from MONAI @cardoso2022monai was parametrized based on the dataset to change the spatial dimenstion (2D vs. 3D) and the nuber of input channels available.
 
 Since the 3D datasets provide additional co-registered MRI imaging procedures of the same sample, both T1-weighted images as well as @flair images were used as inputs for the 3D network, with the 2D network receiving only the single-channel intensity image provided by @em.
+
+While the current state-of-the art network for medical image segmenation, nnU-Net @isensee2021nnu offers a more standardized baseline for experimentation often achieving high out-of-the box segmentation performance, adapting its automated configuration pipeline remains challenging for our use-case. Although the nnU-Net framework operates on image sub-patches like our training pipeline, a precomputation of full-volume Voronoi masks, weight maps and the changes this requires in the framework introduced an architectural barrier hindering flexible experimentation.
 
 === Precomputation and Image Patching<sec_precomputation_and_patching>
 Since the label files used in loss calculations are static and do not change, efficient precomputation of the connected components, their voronoi regions and most weight maps significantly speeds up training. @figprecomputation shows the construction of all precomputed information available during training.
@@ -482,7 +485,7 @@ The introduction of image patching, a common method in segmentation to divide in
 #figure(
 table(
   columns: (auto, auto, auto, auto),
-  inset: 10pt,
+  inset: 8pt,
   align: horizon,
   table.header(
     [*Dataset*], [*Source Image Size*], [*Patch RoI*], [*Number of Patches*],
@@ -520,7 +523,7 @@ In addition to the patching parameters in @tabpatching, this section gives a des
 #figure(
 table(
   columns: (auto, auto, auto, auto),
-  inset: 10pt,
+  inset: 8pt,
   align: horizon,
   table.header(
     [*Dataset*], [*Learning Rate*], [*Batch Size*], [*Num. Training Epochs*],
@@ -546,13 +549,11 @@ table(
   [$16$],
   [$300$],
 ),
-  caption: [An overview of the hyperparameters used during training.],
+  caption: [An overview of the hyperparameters used during training for each dataset.],
 )<tabhparams>
 
 Data augmentations were used to increase the size of the available training data and make the model more robust and generalizable. These augmentations are also implemented in MONAI and offer an efficient and standardized way to apply both spatial- as well as intensity-based augmentations. All samples are passed through a base transformation pipeline that normalizes image intensities, only data from the train set then goes through standard random spatial augmentations such as rotations, flips and zooms. Only images from the training set also go through randomized intensity-based transforms, leaving the additional precomputed information seen in @figprecomputation as-is.
 
-In order to remain relatively metric-agnostic and avoid checkpoints that are biased towards a specific measurement in our evaluation, all models were trained to completion using the configurations described above and the final model weights were used to generate test results.
-
-While the current state-of-the art network for medical image segmenation, nnU-Net @isensee2021nnu offers a more standardized baseline for experimentation often achieving superior out-of-the box segmentation performance, adapting its automated configuration pipeline remains challenging for our use-case. Although the nnU-Net framework operates on image sub-patches like our training pipeline, a precomputation of full-volume Voronoi masks, weight maps and the changes this requires in the framework introduced an architectural barrier hindering flexible experimentation.
+In order to remain relatively metric-agnostic and avoid checkpoints that are biased towards a specific measurement in our evaluation, all models were trained to completion using the configurations described above and the final model weights were used to generate test results. #todo("Hendrik commented that this is still unclear, but unsure on what to add further")
 
 With this technical setup, we evaluated several modifications of the formula presented in @eqtotalloss including different compound loss functions as well as modifying the global and local weights. We consider standard $cal(L)_"DiceCE"$ operating globally on the image as a baseline. We further analyze the effect weight maps have on this baseline loss. To improve readability, the formula $cal(L)_"total" = hat(alpha) * cal(L)_"global" + hat(beta) * cal(L)_"Voronoi"$ is simplified to a tuple with the baseline being represented as (DiceCE, none).

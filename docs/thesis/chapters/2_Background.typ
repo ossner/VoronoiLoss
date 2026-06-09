@@ -2,14 +2,14 @@
 
 = Background <chapter_background>
 This section is dedicated to the knowledge required for the understanding and evaluation of the concepts and themes explored in this thesis.
-@semanticsegmentation introduces the topic of semantic segmentation as well as general principles of deep learning. @sec_connectedcomponents formalizes specific concepts in the domain  and how these concepts give rise to the problem space introduced in @multi-instance-semantic-segmentation at the core of this thesis. @voronoi_tessellation gives an overview and a definition of the separation of that space into distance-based regions that aims to address a problem introduced in @instance_imbalance that is often encountered in biomedical imaging.
+@semanticsegmentation introduces the topic of semantic segmentation as well as general principles of deep learning. @sec_connectedcomponents formalizes the concept of connected components in the domain and how they give rise to the problem space introduced in @multi-instance-semantic-segmentation. @voronoi_tessellation gives an overview of distance-based Voronoi regions that we will use to address a problem often encountered in biomedical imaging described more closely in @instance_imbalance.
 
 == Semantic Segmentation <semanticsegmentation>
-Semantic Segmentation is a subset of mainly supervised learning problems in which a neural network is trained to assign a class label to every pixel in an image. This is an aged and important problem in many domains such as medical imaging and autonomous driving among others and much research has been devoted to improving the detection and delineation of objects in images. This section will cover the basics especially with respect to binary segmentation.
+Semantic Segmentation is a subset of mainly supervised learning problems in which a neural network is trained to assign a class label to every pixel in an image. This is an aged and important problem in many domains such as medical imaging and autonomous driving among others and much research has been devoted to improving the detection and delineation of objects in images. This section will cover the basics, especially with respect to binary segmentation.
 
 === Binary Pixel Classification
 
-Binary semantic segmentation can be seen as the base case wherein a model is given an image with shape $(n_x,n_y)$ consisting of $N=n_x*n_y$ discrete pixels ($(n_x,n_y,n_z)$ in the case of 3D, where the $N=n_x*n_y*n_z$ discrete units are called voxels) and accompanying binary labels of the same shape indicating "foreground" (pixels where the label is $1$) and "background" (where the label is $0$). For simplicity, the terms pixels and voxels are used interchangeably in the remainder of this work. From this, the model is then asked to learn meaningful features to generalize to unseen data. @figsemanticinput shows a sample of information provided to a network in a binary semantic segmentation problem. The label $Y$ can be seen as an ordered set of discrete pixels or voxels $y_i$:
+Binary semantic segmentation can be seen as the base case wherein a model is given an image with shape $(n_x,n_y)$ consisting of $N=n_x*n_y$ discrete pixels ($(n_x,n_y,n_z)$ in the case of 3D, where the $N=n_x*n_y*n_z$ discrete units are called voxels) and accompanying binary labels of the same shape indicating "foreground" (pixels where the label is $1$) and "background" (where the label is $0$). For simplicity, the terms pixels and voxels are used interchangeably in the remainder of this work. From these inputs, the model is then asked to learn meaningful features to generalize to unseen data. @figsemanticinput shows a sample of information provided to a network in a binary semantic segmentation problem. The label $Y$ can be seen as an ordered set of discrete pixels or voxels $y_i$:
 
 $
   Y: {y_1, y_2, dots, y_N | y_n in {0,1}}
@@ -28,7 +28,7 @@ This is also called the reference annotation of the accompanying image. This ann
   ],
 ) <figsemanticinput>
 
-The aim of semantic segmentation is to train a classifier that can approximate $Y$ and generalize to unseen data, we'll call the output of the classifier the *prediction*
+The aim of semantic segmentation is to train a classifier that can approximate $Y$ and generalize to unseen data, we will call the output of the classifier the *prediction*
 
 $
   hat(Y): {hat(y)_1, hat(y)_2, dots, hat(y)_N | hat(y)_n in {0,1}}
@@ -53,7 +53,7 @@ This signal can be calculated through the accumulation of each pixel into one of
     table.cell(fill: class_colors.at(2))[False positive (FP)],
     table.cell(fill: class_colors.at(3))[True Negative (TN)],
   ),
-  caption: [A table showing the classification of predicted pixels into sets describing their relation to the ground truth label. Each pixel is necessarily part of one of the above classifications. Thus forming a partition of the image. Colors represent an intuitive visual guide for later reference.
+  caption: [A table showing the classification of predicted pixels into sets describing their relation to the ground truth label. Each pixel is necessarily part of one of the above classifications. Colors represent an intuitive visual guide for later reference.
   ],
 )<taberrorclassification>
 
@@ -208,7 +208,7 @@ These distances can be efficiently computed using the @edt algorithm. @figvorono
 == The Instance Imbalance Problem <instance_imbalance>
 The eponymous multiple instances in multi-instance segmentation stem from the specific problem domain wherein images contain many of these spatially separate components. Biomedical imaging is a domain which contains many such problem cases. Anatomies or pathologies can manifest as many spatially separate instances of the same class. Examples of these include many types of cancers such as liver tumors or brain metastases, but also anatomical features such as cells or their organelles. Specific examples of such applications are discussed in @sec_datasets.
 
-These cases often contain instances of diverse shapes, sizes and numbers. Since the data implicitly steers the behaviour of the neural network through the loss function, a phenomenon occurs where loss functions prioritize larger instances as an "easier way" to improve the segmentation loss.
+These cases often contain instances of diverse shapes, sizes and numbers. Since the data implicitly steers the behaviour of the neural network through the loss function, a phenomenon occurs where loss functions prioritize larger instances as an "easier way" to improve the segmentation loss @kofler2023blobloss @jaus2025every.
 
 #todo("Rework this with Hendrik comment")
 
@@ -224,7 +224,7 @@ This phenomenon can be seen in exemplary loss function values shown in @figinsta
     align: center + horizon,
     image("../figures/DSC075_1.png", width: 65%), image("../figures/DSC075_2.png", width: 65%), image("../figures/DSC075_3.png", width: 70%),
   ),
-  caption: [Two visualization of a predicted segmentation overlapped with a ground truth label. Colors correspond to the error classification:  #box(inset: 0pt, rect(width: 0.8em, height: 0.8em, fill: class_colors.at(0), stroke: 0.1pt)) TP, #box(inset: 0pt, rect(width: 0.8em, height: 0.8em, fill: class_colors.at(1), stroke: 0.1pt)) FN, #box(inset: 0pt, rect(width: 0.8em, height: 0.8em, fill: class_colors.at(2), stroke: 0.1pt)) FP, #box(inset: 0pt, rect(width: 0.8em, height: 0.8em, fill: class_colors.at(3), stroke: 0.1pt)) TN. In both cases $"DSC"=0.75$, which means during training, $cal(L)_"DSC"$ would provide the same signal to adjust the parameters of the classifier.],
+  caption: [Two visualization of a predicted segmentation overlapped with a ground truth label. Colors correspond to the error classification:  #box(inset: 0pt, rect(width: 0.8em, height: 0.8em, fill: class_colors.at(0), stroke: 0.1pt)) TP, #box(inset: 0pt, rect(width: 0.8em, height: 0.8em, fill: class_colors.at(1), stroke: 0.1pt)) FN, #box(inset: 0pt, rect(width: 0.8em, height: 0.8em, fill: class_colors.at(2), stroke: 0.1pt)) FP, #box(inset: 0pt, rect(width: 0.8em, height: 0.8em, fill: class_colors.at(3), stroke: 0.1pt)) TN. In both cases $"DSC"=0.75$. During training, $cal(L)_"DSC"$ would provide the same signal to adjust the parameters of the classifier.],
 ) <figinstanceimbalance>
 
 The issue arises because the used loss function is inherently not instance-aware, since it simply operates on the number of pixels classified as @tp:short, @fp:short, @fn:short.
