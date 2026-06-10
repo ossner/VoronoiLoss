@@ -6,8 +6,8 @@
     x: none,
     y: 1pt + luma(220),
   ),
-  inset: 8pt,
-
+  inset: 5pt,
+  table.vline(start: 0, stroke: 1.5pt + datasetcolors.at(1)),
   table.header(
     [],
     [DiceCE, none],
@@ -18,6 +18,8 @@
     [DiceCE, DiceTversky],
     [CETversky, DiceTversky],
   ),
+
+  table.hline(start: 0, stroke: 1.5pt + luma(150)),
 
   // test/global/dice
   [DSC],

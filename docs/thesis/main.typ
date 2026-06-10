@@ -29,7 +29,7 @@
 #set text(font: "New Computer Modern Sans")
 #set list(indent: 2em)
 #set enum(indent: 2em)
-#show table.cell: set text(size: 10pt)
+#show table.cell: set text(size: 9pt)
 #show figure.caption: set text(size: 11pt)
 
 
@@ -96,8 +96,8 @@
 #set table(stroke: 0.5pt + black)
 
 // color links and references
-#show ref: set text(fill: color.olive)
-#show link: set text(fill: blue)
+#show ref: set text(fill: blue)
+#show link: set text(fill: rgb("#238a5c"))
 
 // style table-of-contents
 #show outline.entry.where(
@@ -160,10 +160,12 @@
 #show figure: set figure(
   numbering: n => "A." + str(n)
 )
+
+#show figure.caption: set text(size: 10pt)
 #include "chapters/A1_Appendix.typ"
 
 // List of Acronyms.  
-#context text(size: 11pt)[
+#context text(size: 10pt)[
 #heading(numbering: none)[Glossary]
 
 #print-glossary(

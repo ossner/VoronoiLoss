@@ -1,7 +1,7 @@
 #import "../utils.typ": *
 #import "../figures/results/combinedtableloss.typ": importantresults-table_loss_combos
 #import "../figures/results/combinedtableweights.typ": importantresults-table_weight_maps
-#import "../figures/results/combinedtableloss_quartiles.typ": importantresults-table_loss_combos_quartiles
+#import "../figures/results/combinedtableloss_quartiles_3D.typ": importantresults-table_loss_combos_quartiles_3D
 
 = Results <chap_results>
 In this section we present the effects of the previously introduced Voronoi-based tessellation approaches on the various datasets introduced in @sec_datasets. We evaluate all approaches using several global-, region-wise- and instance-wise metrics previously introduced in @sec_metrics.
@@ -15,11 +15,10 @@ Full tables of several additional metrics evaluated across all datasets is given
 == Loss Combinations <sec_losscombos_results>
 Introducing a Voronoi-based loss function component improves many metrics across all datasets in both 2D and 3D as shown in @taballlosscombos. Apart from @rq in the mitochondria dataset, the best models in each datasets and metric combination utilize some form of region-wise loss. Additionally, global metrics such as @dsc as well as instance-wise (e.g. @sqassd) and the region-wise CCDice show improvements across all datsets.
 
-#context text(size: 10pt)[
-  #figure(
-    importantresults-table_loss_combos(),
-    caption: [Results for all datasets across various metrics when changing loss weightings and different compound loss functions using only global DiceCE as a baseline. The first entry of a loss configuration tuple describes $hat(alpha)*cal(L)_"global"$, the second $hat(beta)*cal(L)_"Voronoi"$. Improvements are shown as relative deltas to the baseline in green, metrics that have worsened are shown in red. The best value in each metric is emphasized in bold. Result rows are grouped by their dataset.],
-  )<taballlosscombos>]
+#figure(
+  importantresults-table_loss_combos(),
+  caption: [Results for all datasets across various metrics when changing loss weightings and different compound loss functions using only global DiceCE as a baseline. The first entry of a loss configuration tuple describes $hat(alpha)*cal(L)_"global"$, the second $hat(beta)*cal(L)_"Voronoi"$. Improvements are shown as relative deltas to the baseline in green, metrics that have worsened are shown in red. The best value in each metric is emphasized in bold. Result rows are grouped by their dataset.],
+)<taballlosscombos>
 
 Introduction of region-wise losses has, however, a detrimental impact on training time, increasing the average minutes per train epoch. @figtimeperepoch shows this effect, with the global-only DiceCE requiring the lowest amount of time to train on all 2D and 3D datasets. The @wmh dataset shows the highest difference, with baseline training taking 345 minutes and region-wise DiceCE taking 625 minutes to train the full 500 epochs.
 
@@ -56,6 +55,14 @@ Improvements in instance recall, however, are juxtaposed by worsening of the ins
 ) <figmetsinstanceprecision>
 
 This notwithstanding, @rq:long, the harmonic mean between $"recall"_"inst"$ and $"precision"_"inst"$, improved in almost all alternative configurations except region-only DiceCE.
+
+In addition to the instance recall improvements presented in @figmetsrecallbyquartile, we present similar figure showing @sqdsc based on volume quartile in @figmetsresultslollipopsqdsc. While there are some decreases in the lowest quartile for some loss combinations (with global CETversky and region-wise DiceTversky decreasing Q1 values from 0.18 to 0.13), quartiles 2 and 3 showed consistent improvements across all combinations with minimal increases of $0.29arrow 0.36$ and $0.38arrow 0.51$ respectively. 
+
+#figure(
+    image("../figures/results/mets/lollipop/loss_combos/quartile_SQDSC_comparison.png", width: 95%),
+  caption: [Loss combination lollipop charts of @mets dataset measuring @sqdsc by instance volume quartiles. Baseline values for each quartile are given by dashed lines. Improvements are shown in green over the baseline loss of standard global DiceCE.
+  ],
+) <figmetsresultslollipopsqdsc>
 
 @figsbmgloballocal depicts a qualitative evaluation sample from both the (DiceCE, none) and (none, DiceCE) combinations. The label contains 13 metastases with the global DiceCE identifying 6 as true positive instances and no $"FP"_"inst"$. The Voronoi-region-wise DiceCE, however, found 11 label instances, predicting 5 false instances. This exemplifies that forcing the loss function to compute gradients over local Voronoi regions rather than the global volume makes the model more sensitive, identifying otherwise missed instances but leading to false positives.
 

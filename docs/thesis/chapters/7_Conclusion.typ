@@ -15,6 +15,6 @@ While we believe that this thesis has shown clear advancements in multi-instance
 
 The impact of weight maps on segmentation performance proved to be inconsistent across, hindering their general-purpose adaptability. While they are able to introduce manual corrections to loss biases, more research and experimentation is needed to develop more solid heuristics on weight map construction that takes dataset instance statistics into account.
 
-*Integrating into automated frameworks*
+*Integration into automated frameworks*
 
 The state-of-the-art in medical image segmentation is nnU-Net, a framework that automatically adapts model parameters to a given dataset, achieving high segmentation performance out-of-the-box. While we did not use this framework to validate our approaches due to its rigidity; an integration of true, globally precomputed Voronoi tessellation and easily customizable weight maps would provide a valuable addition to the current medical image segmentation landscape.

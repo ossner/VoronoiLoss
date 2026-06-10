@@ -4,19 +4,22 @@
   align: (left, center, center, center, center, center, center, ),
   stroke: (
     x: none,
-    y: 0.4pt + luma(220),
+    y: 1pt + luma(220),
   ),
-  inset: 8pt,
+  inset: 5pt,
 
+  table.vline(start: 0, stroke: 1.5pt + datasetcolors.at(0)),
   table.header(
     [],
-      [none],
-     [v_iw],
-     [v_region],
-     [v_adaptive],
-     [v_mountains],
-     [v_islands],
+      [$W_"none"$],
+     [$W_"v_iw"$],
+     [$W_"v_region"$],
+     [$W_"v_adaptive"$],
+     [$W_"v_mountains"$],
+     [$W_"v_islands"$],
   ),
+
+  table.hline(start: 0, stroke: 1.5pt + luma(150)),
 
   // test/global/dice
   [DSC],
@@ -35,6 +38,24 @@
   [#delta(-0.040)],
   [#delta(+0.021)],
   [#text(size: 10.5pt)[*#delta(+0.070)*]],
+
+  // test/global/precision
+  [precision],
+  [0.709],
+  [#delta(-0.685)],
+  [#text(size: 10.5pt)[*#delta(+0.042)*]],
+  [#delta(+0.041)],
+  [#delta(-0.146)],
+  [#delta(-0.267)],
+
+  // test/global/recall
+  [recall],
+  [0.443],
+  [#text(size: 10.5pt)[*#delta(+0.517)*]],
+  [#delta(-0.014)],
+  [#delta(-0.045)],
+  [#delta(+0.044)],
+  [#delta(+0.141)],
 
   // test/instance/f1
   [RQ],
@@ -81,42 +102,6 @@
   [#delta(+0.218)],
   [#delta(+0.108)],
 
-  // test/instance/recall_q0
-  [$"recall"_"inst"_"Q1"$],
-  [0.250],
-  [#text(size: 10.5pt)[*#delta(+0.750)*]],
-  [#delta(-0.125)],
-  [#delta(-0.125)],
-  [#delta(+0.438)],
-  [#delta(+0.000)],
-
-  // test/instance/recall_q1
-  [$"recall"_"inst"_"Q2"$],
-  [0.444],
-  [#text(size: 10.5pt)[*#delta(+0.519)*]],
-  [#delta(-0.028)],
-  [#delta(-0.083)],
-  [#delta(+0.389)],
-  [#delta(+0.157)],
-
-  // test/instance/recall_q2
-  [$"recall"_"inst"_"Q3"$],
-  [0.758],
-  [#text(size: 10.5pt)[*#delta(+0.225)*]],
-  [#delta(+0.000)],
-  [#delta(+0.024)],
-  [#delta(+0.118)],
-  [#delta(+0.028)],
-
-  // test/instance/recall_q3
-  [$"recall"_"inst"_"Q4"$],
-  [0.980],
-  [#delta(-0.028)],
-  [#text(size: 10.5pt)[*#delta(+0.010)*]],
-  [#delta(-0.010)],
-  [#delta(+0.000)],
-  [#delta(-0.010)],
-
   // test/cc/dice
   [CCDice],
   [0.358],
@@ -125,22 +110,4 @@
   [#delta(-0.007)],
   [#text(size: 10.5pt)[*#delta(+0.025)*]],
   [#delta(+0.015)],
-
-  // test/global/precision
-  [precision],
-  [0.709],
-  [#delta(-0.685)],
-  [#text(size: 10.5pt)[*#delta(+0.042)*]],
-  [#delta(+0.041)],
-  [#delta(-0.146)],
-  [#delta(-0.267)],
-
-  // test/global/recall
-  [recall],
-  [0.443],
-  [#text(size: 10.5pt)[*#delta(+0.517)*]],
-  [#delta(-0.014)],
-  [#delta(-0.045)],
-  [#delta(+0.044)],
-  [#delta(+0.141)],
 )

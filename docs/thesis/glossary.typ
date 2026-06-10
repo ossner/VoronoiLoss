@@ -63,7 +63,7 @@
     key: "dsc",
     short: "DSC",
     long: "Dice Metric",
-    group: "Abbreviations",
+    group: "Metrics",
   ),
   (
     key: "cnn",
@@ -87,14 +87,12 @@
     key: "sqassd",
     short: "SQASSD",
     long: "Segmentation Quality Average Symmetric Surface Distance",
-    description: [An instance-wise metric that denotes the average distances of the prediction surface to the ground truth surface. Lower is considered better.],
     group: "Metrics",
   ),
   (
     key: "rq",
     short: "RQ",
     long: "Recognition Quality",
-    description: [An F1 score over instance matching.],
     group: "Metrics",
   ),
   (
