@@ -28,11 +28,11 @@
     $cal(L)_"Voronoi":Y, tilde(Y), R mapsto RR$, [An arbitrary loss function calculating region-wise learning signals and averaging them across all Voronoi regions R.],
     $hat(alpha), hat(beta)$, [The pre-normalized weights of the global and region-wise loss respectively.],
     $cal(I) = {(I_p, I_g) | I_p in hat(I), I_g in I}$, [The set of all matched instances from connected label components $I$ and prediction components $hat(I)$.],
-    $W_"none"$, [A neutral weight map that has no impact on loss values @eqvnone],
-    $W_"v_region"$, [The Voronoi region weight map equalizing budget across all regions @eqvregion],
-    $W_"v_iw"$, [The Voronoi inverse map assigning a higher value to intances than background @eqviw],
-    $W_"v_mountains"$, [The Voronoi mountains map with distance-based decaying weights @eqvmountains],
-    $W_"v_islands"$, [The Voronoi islands map with weights accumulating based on distance from an instance @eqvislands],
-    $W_"v_adaptive"$, [An adaptive region map assigning importance to regions with failing predictions on-the-fly @eqvadaptive_unscaled],
+    $W_"none"$, [A neutral weight map that has no impact on loss values @eqvnone.],
+    $W_"v_region"$, [The Voronoi region weight map equalizing budget across all regions @eqvregion.],
+    $W_"v_iw"$, [The Voronoi inverse map assigning a higher value to intances than background @eqviw.],
+    $W_"v_mountains"$, [The Voronoi mountains map with distance-based decaying weights @eqvmountains.],
+    $W_"v_islands"$, [The Voronoi islands map with weights accumulating based on distance from an instance @eqvislands.],
+    $W_"v_adaptive"$, [An adaptive region map assigning importance to regions with failing predictions on-the-fly @eqvadaptive_unscaled.],
   )
 ]

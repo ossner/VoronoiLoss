@@ -30,7 +30,7 @@ Introduction of region-wise losses has, however, a detrimental impact on trainin
 ) <figtimeperepoch>
 The following sections will provide additional, more granular segmentation performance results of region-wise loss combinations per dataset.
 
-Specifically for the @mets:long (@mets) dataset, while @taballlosscombos shows overall increases in instance recall, @figmetsrecallbyquartile shows the vast improvements with no decrease in instance recall by volume quartile over all quartiles. The improvement in instance recall is most visible in Q2 with the purely region-wise DiceCE loss being able to identify $84%$ more instances in the quartile over the baseline. Across other loss combinations, Q2 improvements are slightly lower, but consistently increased.
+Specifically for the @mets:long (@mets) dataset, while @taballlosscombos shows overall increases in instance recall, @figmetsrecallbyquartile shows the vast improvements with no decrease in instance recall by volume quartile over all quartiles. The improvement in instance recall is most visible in Q2 with the purely region-wise DiceCE loss being able to identify more instances in the quartile compared to the baseline $(0.44 -> 0.81)$. Across other loss combinations, Q2 improvements are slightly lower, but consistently present.
 
 #figure(
   image("../figures/results/mets/lollipop/loss_combos/quartile_recall_comparison.png", width: 100%),
@@ -56,7 +56,7 @@ Improvements in instance recall, however, are juxtaposed by worsening of the ins
 
 This notwithstanding, @rq:long, the harmonic mean between $"recall"_"inst"$ and $"precision"_"inst"$, improved in almost all alternative configurations except region-only DiceCE.
 
-In addition to the volume-wise instance recall improvements, we present similar figure showing @sqdsc based on volume quartile in @figmetsresultslollipopsqdsc. While there are decreases in the lowest quartile for some loss combinations (with global CETversky and region-wise DiceTversky decreasing Q1 values from 0.18 to 0.13), quartiles 2 and 3 showed consistent improvements across all combinations with minimal increases of $0.29arrow 0.36$ and $0.38arrow 0.51$ respectively.
+In addition to the volume-wise instance recall improvements, we present a similar figure showing @sqdsc based on volume quartile in @figmetsresultslollipopsqdsc. While there are decreases in the lowest quartile for some loss combinations (with global CETversky and region-wise DiceTversky decreasing Q1 values from 0.18 to 0.13), quartiles 2 and 3 showed consistent improvements across all combinations with minimal increases of $0.29 -> 0.36$ and $0.38 -> 0.51$ respectively.
 
 #figure(
   image("../figures/results/mets/lollipop/loss_combos/quartile_SQDSC_comparison.png", width: 95%),
@@ -79,7 +79,7 @@ In addition to the volume-wise instance recall improvements, we present similar 
 
 Given the high-stakes domain of brain cancer metastases, predicting no cancer lesions at all can be seen as a fatal flaw in any model, it is therefore also important to examine the number of cases where a model evaluated a patient as cancer-free (i.e. the set of all connected components on the prediction $hat(Y)$ is empty, or: $hat(I) = emptyset$). These cases do not exist in the dataset, with each scanned patient exhibiting at least 1 metastasized tumor. Of all tested combinations, only the baseline of the purely global DiceCE failed to predict any cancerous lesions in 2 patients.
 
-The @wmh:long (@wmh) datset is the second 3D dataset under evaluation. As with @mets, @taballlosscombos show that key metrics in all categories of global, instance-wise and region-wise are improved when training with the Voronoi loss paradigm. @dsc however, only showed improvements over the baseline when the global loss component received double the weight of the the region-wise component, increasing from 0.451 to 0.488.
+The @wmh:long (@wmh) dataset is the second 3D dataset under evaluation. As with @mets, @taballlosscombos shows that key metrics in all categories of global, instance-wise and region-wise are improved when training with the Voronoi loss paradigm. @dsc however, only showed improvements over the baseline when the global loss component received double the weight of the the region-wise component, increasing from 0.451 to 0.488.
 
 @figwmhrecallbyquartile shows changes in the recall of instances based on their volume. It can be seen that @wmh instances are identified more often across all volume quartiles showing the largest improvements in recall for the smallest instances belonging to Q1 and Q2 with all region-wise losses improving this value from 0.1 to >0.17 and 0.2 to >0.33 respectively.
 

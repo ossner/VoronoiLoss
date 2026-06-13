@@ -86,10 +86,6 @@
   }
 })
 
-// Set citation style
-// ACM is standard for computing-related publications
-#set cite(style: "association-for-computing-machinery")
-
 // Table stroke
 #set table(stroke: 0.5pt + black)
 
@@ -183,5 +179,5 @@
 // --- Bibliography ---
 
 #set par(leading: 0.7em, first-line-indent: 0em, justify: true)
-#bibliography("items.bib", style: "association-for-computing-machinery")
+#bibliography("items.bib", style: "citestyle.csl")
 ]
