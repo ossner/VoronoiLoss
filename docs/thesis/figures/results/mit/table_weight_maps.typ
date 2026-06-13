@@ -75,7 +75,7 @@
   [#delta(-0.021)],
 
   // test/instance/assd
-  [SQASSD],
+  [SQASSD$arrow.b$],
   [0.151],
   [#deltainv(+0.013)],
   [#deltainv(+0.018)],
@@ -91,6 +91,15 @@
   [#delta(-0.053)],
   [#delta(-0.091)],
   [#text(size: 9pt)[*#delta(+0.013)*]],
+
+  // test/instance/recall
+  [$"recall"_"inst"$],
+  [0.962],
+  [#text(size: 10.5pt)[*#delta(+0.027)*]],
+  [#delta(+0.006)],
+  [#delta(+0.017)],
+  [#delta(+0.021)],
+  [#delta(+0.005)],
 
   // test/cc/dice
   [CCDice],

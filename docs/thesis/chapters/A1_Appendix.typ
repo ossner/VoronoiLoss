@@ -34,33 +34,33 @@ This appendix provides additional results, tables and charts for deeper examinat
 
 #figure(
   metsresults-table_loss_combos(),
-  caption: [Complete results table of the @mets dataset across various loss and weight combinations. All results are evaluated against a global-only DiceCE loss and their relative changes are reported. Improvements over the baseline are shown in green, negligeable changes in metrics are shown in gray and worsening metrics in red. The best result for each metric is emphasized in bold.
+  caption: [Complete results table of the @mets dataset across various loss and weight combinations. All results are evaluated against a global-only DiceCE loss and their relative changes are reported. Improvements over the baseline are shown in green, worsening metrics in red and $arrow.b$ indicates a lower metric value is an improvement. The best result for each metric is emphasized in bold.
   ],
 )<tabmetslosscombos>
 
 #figure(
   wmhresults-table_loss_combos(),
-  caption: [Complete results table of the @wmh dataset across various loss and weight combinations. All results are evaluated against a global-only DiceCE loss and their relative changes are reported. Improvements over the baseline are shown in green, negligeable changes in metrics are shown in gray and worsening metrics in red. The best result for each metric is emphasized in bold.
+  caption: [Complete results table of the @wmh dataset across various loss and weight combinations. All results are evaluated against a global-only DiceCE loss and their relative changes are reported. Improvements over the baseline are shown in green, worsening metrics in red and $arrow.b$ indicates a lower metric value is an improvement. The best result for each metric is emphasized in bold.
   ],
 )<tabwmhlosscombos>
 
 
 #figure(
   cvresults-table_loss_combos(),
-  caption: [Complete results table of the @cv dataset across various loss and weight combinations. All results are evaluated against a global-only DiceCE loss and their relative changes are reported. Improvements over the baseline are shown in green, negligeable changes in metrics are shown in gray and worsening metrics in red. The best result for each metric is emphasized in bold.
+  caption: [Complete results table of the @cv dataset across various loss and weight combinations. All results are evaluated against a global-only DiceCE loss and their relative changes are reported. Improvements over the baseline are shown in green with $arrow.b$ indicating a lower metric value is an improvement, negligible changes in metrics are shown in gray and worsening metrics in red. The best result for each metric is emphasized in bold.
   ],
 )<tabcvlosscombos>
 
 #figure(
   agresults-table_loss_combos(),
-  caption: [Complete results table of the @ag dataset across various loss and weight combinations. All results are evaluated against a global-only DiceCE loss and their relative changes are reported. Improvements over the baseline are shown in green, negligeable changes in metrics are shown in gray and worsening metrics in red. The best result for each metric is emphasized in bold.
+  caption: [Complete results table of the @ag dataset across various loss and weight combinations. All results are evaluated against a global-only DiceCE loss and their relative changes are reported. Improvements over the baseline are shown in green with $arrow.b$ indicating a lower metric value is an improvement, negligible changes in metrics are shown in gray and worsening metrics in red. The best result for each metric is emphasized in bold.
   ],
 )<tabaglosscombos>
 
 
 #figure(
   mitresults-table_loss_combos(),
-  caption: [Complete results table of the @mit dataset across various loss and weight combinations. All results are evaluated against a global-only DiceCE loss and their relative changes are reported. Improvements over the baseline are shown in green, negligeable changes in metrics are shown in gray and worsening metrics in red. The best result for each metric is emphasized in bold.
+  caption: [Complete results table of the @mit dataset across various loss and weight combinations. All results are evaluated against a global-only DiceCE loss and their relative changes are reported. Improvements over the baseline are shown in green with $arrow.b$ indicating a lower metric value is an improvement and worsening metrics in red. The best result for each metric is emphasized in bold.
   ],
 )<tabmitlosscombos>
 
@@ -79,32 +79,32 @@ This appendix provides additional results, tables and charts for deeper examinat
 
 #figure(
   metsresults-table_weight_maps(),
-  caption: [Complete results table of the @mets dataset across all tested weight maps. All results are evaluated against a global DiceCE loss and their relative changes are reported. Improvements over the baseline are shown in green, negligeable changes in metrics are shown in gray and worsening metrics in red. The best result for each metric is emphasized in bold.
+  caption: [Complete results table of the @mets dataset across all tested weight maps. All results are evaluated against a global DiceCE loss and their relative changes are reported. Improvements over the baseline are shown in green, worsening metrics in red and $arrow.b$ indicating a lower metric value is an improvement. The best result for each metric is emphasized in bold.
   ],
 )<tabmetsweightmaps>
 
 #figure(
   wmhresults-table_weight_maps(),
-  caption: [Complete results table of the @wmh dataset across all tested weight maps. All results are evaluated against a global-only DiceCE loss and their relative changes are reported. Improvements over the baseline are shown in green, negligeable changes in metrics are shown in gray and worsening metrics in red. The best result for each metric is emphasized in bold.
+  caption: [Complete results table of the @wmh dataset across all tested weight maps. All results are evaluated against a global-only DiceCE loss and their relative changes are reported. Improvements over the baseline are shown in green, worsening metrics in red and $arrow.b$ indicating a lower metric value is an improvement. The best result for each metric is emphasized in bold.
   ],
 )<tabwmhweightmaps>
 
 
 #figure(
   cvresults-table_weight_maps(),
-  caption: [Complete results table of the @cv dataset across all tested weight maps. All results are evaluated against a global-only DiceCE loss and their relative changes are reported. Improvements over the baseline are shown in green, negligeable changes in metrics are shown in gray and worsening metrics in red. The best result for each metric is emphasized in bold.
+  caption: [Complete results table of the @cv dataset across all tested weight maps. All results are evaluated against a global-only DiceCE loss and their relative changes are reported. Improvements over the baseline are shown in green, negligible changes in metrics are shown in gray and worsening metrics in red and $arrow.b$ indicating a lower metric value is an improvement. The best result for each metric is emphasized in bold.
   ],
 )<tabcvweightmaps>
 
 #figure(
   agresults-table_weight_maps(),
-  caption: [Complete results table of the @ag dataset across all tested weight maps. All results are evaluated against a global-only DiceCE loss and their relative changes are reported. Improvements over the baseline are shown in green, negligeable changes in metrics are shown in gray and worsening metrics in red. The best result for each metric is emphasized in bold.
+  caption: [Complete results table of the @ag dataset across all tested weight maps. All results are evaluated against a global-only DiceCE loss and their relative changes are reported. Improvements over the baseline are shown in green, negligible changes in metrics are shown in gray and worsening metrics in red and $arrow.b$ indicating a lower metric value is an improvement. The best result for each metric is emphasized in bold.
   ],
 )<tabagweightmaps>
 
 
 #figure(
   mitresults-table_weight_maps(),
-  caption: [Complete results table of the @mit dataset across all tested weight maps. All results are evaluated against a global-only DiceCE loss and their relative changes are reported. Improvements over the baseline are shown in green, negligeable changes in metrics are shown in gray and worsening metrics in red. The best result for each metric is emphasized in bold.
+  caption: [Complete results table of the @mit dataset across all tested weight maps. All results are evaluated against a global-only DiceCE loss and their relative changes are reported. Improvements over the baseline are shown in green, negligible changes in metrics are shown in gray and worsening metrics in red and $arrow.b$ indicating a lower metric value is an improvement. The best result for each metric is emphasized in bold.
   ],
 )<tabmitweightmaps>

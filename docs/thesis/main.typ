@@ -42,9 +42,7 @@
   author: "Sebastian Oßner",
   title-en: "Addressing Volumetric Bias in Multi-Instance Semantic Segmentation Using Voronoi Tessellation",
   title-de: "Adressierung volumetrischer Befangenheit in Multi-Instanz-Semantischer Segmentierung durch Voronoi-Tessellation",
-  abstract-text: [
-   #lorem(30)
-  ],
+  abstract-text: [Modern medical image segmentation networks exhibit an inherent bias based on the size of objects they are tasked to segment, which poses a significant problem particularly in high-stakes applications such as cancer segmentation where this can cause a network to prioritize larger tumors and fail to identify smaller ones. We introduce several approaches to address this bias by partitioning the image space into geometric regions in order to spatially equalize the learning signal and counteract this effect. We incorporate this spatial tessellation into loss functions and weight maps and evaluate its effect on five multi-instance datasets that exhibit a diverse range of connected components. On the stanford brain metastasis dataset, the use of an additional Voronoi-region-wise loss function improves the identification of individual tumor metastases from 64.8% to 85.2% over the standard DiceCE baseline, with particularly high gains for below-average sized lesions. This improvement did not have a detrimental effect on the global segmentation, increasing the Dice score by 8.9 percentage points and recognition quality by 11.6 points. The results of this thesis show that a segmentation network's volumetric bias toward larger instances can be mitigated through regional equalization.],
   submission-date: datetime.today().display("[day].[month].[year]"),
   show-title-in-header: true,
   draft: draft,
@@ -107,11 +105,6 @@
   strong(it)
 }
 
-// Draft Settings //
-#show cite: set text(fill: blue) if inwriting
-#show footnote: set text(fill: purple) if inwriting
-#set cite(style: "chicago-author-date") if inwriting
-
 // Make and register Glossary //
 #show: make-glossary
 #register-glossary(entry-list)
@@ -143,7 +136,8 @@
 #include "chapters/4_Methodology.typ"
 #include "chapters/5_Results.typ"
 #include "chapters/6_Discussion.typ"
-#include "chapters/7_Conclusion.typ"
+#include "chapters/7_Future_Work.typ"
+#include "chapters/8_Conclusion.typ"
 
 // --- Appendices ---
 
@@ -171,6 +165,7 @@
 #print-glossary(
   entry-list,
 )
+
 // List of figures.
 #heading(numbering: none)[List of Figures]
 #outline(

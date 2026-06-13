@@ -75,7 +75,7 @@
   [#delta(+0.066)],
 
   // test/instance/assd
-  [SQASSD],
+  [SQASSD$arrow.b$],
   [1.173],
   [#deltainv(-0.234)],
   [#deltainv(-0.356)],

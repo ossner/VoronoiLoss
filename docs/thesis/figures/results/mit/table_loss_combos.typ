@@ -24,7 +24,7 @@
   // test/global/dice
   [DSC],
   [0.944],
-  [#text(size: 10.5pt)[*#delta(+0.001)*]],
+  [#text(size: 9.5pt)[*#delta(+0.001)*]],
   [#delta(-0.000)],
   [#delta(-0.005)],
   [#delta(+0.001)],
@@ -39,11 +39,11 @@
   [#delta(-0.001)],
   [#delta(+0.007)],
   [#delta(+0.009)],
-  [#text(size: 10.5pt)[*#delta(+0.014)*]],
+  [#text(size: 9.5pt)[*#delta(+0.014)*]],
 
   // test/global/precision
   [precision],
-  [#text(size: 10.5pt)[*0.948*]],
+  [#text(size: 9.5pt)[*0.948*]],
   [#delta(-0.011)],
   [#delta(-0.006)],
   [#delta(-0.008)],
@@ -59,11 +59,11 @@
   [#delta(+0.001)],
   [#delta(+0.010)],
   [#delta(+0.015)],
-  [#text(size: 10.5pt)[*#delta(+0.024)*]],
+  [#text(size: 9.5pt)[*#delta(+0.024)*]],
 
   // test/instance/f1
   [RQ],
-  [#text(size: 10.5pt)[*0.907*]],
+  [#text(size: 9.5pt)[*0.907*]],
   [#delta(-0.023)],
   [#delta(-0.006)],
   [#delta(-0.022)],
@@ -74,7 +74,7 @@
   // test/instance/dice
   [SQDSC],
   [0.939],
-  [#text(size: 10.5pt)[*#delta(+0.010)*]],
+  [#text(size: 9.5pt)[*#delta(+0.010)*]],
   [#delta(+0.009)],
   [#delta(+0.006)],
   [#delta(+0.008)],
@@ -82,10 +82,10 @@
   [#delta(+0.007)],
 
   // test/instance/assd
-  [SQASSD],
+  [SQASSD$arrow.b$],
   [0.151],
   [#deltainv(-0.057)],
-  [#text(size: 10.5pt)[*#deltainv(-0.058)*]],
+  [#text(size: 9.5pt)[*#deltainv(-0.058)*]],
   [#deltainv(-0.049)],
   [#deltainv(-0.055)],
   [#deltainv(-0.033)],
@@ -93,7 +93,7 @@
 
   // test/instance/precision
   [$"precision"_"inst"$],
-  [#text(size: 10.5pt)[*0.873*]],
+  [#text(size: 9.5pt)[*0.873*]],
   [#delta(-0.053)],
   [#delta(-0.018)],
   [#delta(-0.042)],
@@ -104,7 +104,7 @@
   // test/instance/recall
   [$"recall"_"inst"$],
   [0.962],
-  [#text(size: 10.5pt)[*#delta(+0.025)*]],
+  [#text(size: 9.5pt)[*#delta(+0.025)*]],
   [#delta(+0.014)],
   [#delta(+0.011)],
   [#delta(+0.020)],
@@ -114,7 +114,7 @@
   // test/cc/dice
   [CCDice],
   [0.896],
-  [#text(size: 10.5pt)[*#delta(+0.027)*]],
+  [#text(size: 9.5pt)[*#delta(+0.027)*]],
   [#delta(+0.017)],
   [#delta(+0.011)],
   [#delta(+0.021)],

@@ -171,7 +171,7 @@
   (
     key: "fbeta",
     short: [$F_beta$],
-    description: [A measure using a positive real factor $beta$ to calculate the weighted harmonic mean between precision and recall. Higher is considered better.],
+    long: [$F_beta$-Score],
     group: "Metrics",
   ),
 )

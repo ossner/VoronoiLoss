@@ -34,7 +34,7 @@
   [DSC],
   [0.465],
   [#delta(-0.422)],
-  [#text(size: 10.5pt)[*#delta(+0.011)*]],
+  [#text(size: 9.5pt)[*#delta(+0.011)*]],
   [#delta(+0.002)],
   [#delta(-0.011)],
   [#delta(-0.004)],
@@ -46,21 +46,21 @@
   [#delta(-0.045)],
   [#delta(+0.034)],
   [#delta(-0.193)],
-  [#text(size: 10.5pt)[*#delta(+0.051)*]],
+  [#text(size: 9.5pt)[*#delta(+0.051)*]],
 
   // test/instance/assd
-  [SQASSD],
+  [SQASSD$arrow.b$],
   [0.802],
   [#deltainv(+2.282)],
   [#deltainv(+0.038)],
   [#deltainv(+0.042)],
-  [#text(size: 10.5pt)[*#deltainv(-0.004)*]],
+  [#text(size: 9.5pt)[*#deltainv(-0.004)*]],
   [#deltainv(+0.114)],
 
   // test/instance/recall
   [$"recall"_"inst"$],
   [0.648],
-  [#text(size: 10.5pt)[*#delta(+0.307)*]],
+  [#text(size: 9.5pt)[*#delta(+0.307)*]],
   [#delta(-0.025)],
   [#delta(+0.011)],
   [#delta(+0.218)],
@@ -72,7 +72,7 @@
   [#delta(-0.314)],
   [#delta(-0.028)],
   [#delta(-0.007)],
-  [#text(size: 10.5pt)[*#delta(+0.025)*]],
+  [#text(size: 9.5pt)[*#delta(+0.025)*]],
   [#delta(+0.015)],
 
   table.hline(start: 1, stroke: 1.5pt + luma(150)),
@@ -89,25 +89,25 @@
   [#delta(-0.046)],
   [#delta(+0.051)],
   [#delta(-0.015)],
-  [#text(size: 10.5pt)[*#delta(+0.065)*]],
+  [#text(size: 9.5pt)[*#delta(+0.065)*]],
   [#delta(+0.025)],
 
   // test/instance/f1
   [RQ],
   [0.427],
   [#delta(-0.272)],
-  [#text(size: 10.5pt)[*#delta(+0.103)*]],
+  [#text(size: 9.5pt)[*#delta(+0.103)*]],
   [#delta(+0.070)],
   [#delta(-0.058)],
   [#delta(+0.081)],
 
   // test/instance/assd
-  [SQASSD],
+  [SQASSD$arrow.b$],
   [1.173],
   [#deltainv(-0.234)],
   [#deltainv(-0.356)],
   [#deltainv(+0.236)],
-  [#text(size: 10.5pt)[*#deltainv(-0.665)*]],
+  [#text(size: 9.5pt)[*#deltainv(-0.665)*]],
   [#deltainv(+0.141)],
 
   // test/instance/recall
@@ -116,7 +116,7 @@
   [#delta(+0.228)],
   [#delta(+0.124)],
   [#delta(+0.086)],
-  [#text(size: 10.5pt)[*#delta(+0.361)*]],
+  [#text(size: 9.5pt)[*#delta(+0.361)*]],
   [#delta(+0.103)],
 
   // test/cc/dice
@@ -125,7 +125,7 @@
   [#delta(+0.082)],
   [#delta(+0.078)],
   [#delta(+0.051)],
-  [#text(size: 10.5pt)[*#delta(+0.186)*]],
+  [#text(size: 9.5pt)[*#delta(+0.186)*]],
   [#delta(+0.074)],
 
   
@@ -142,13 +142,13 @@
   [0.804],
   [#delta(-0.032)],
   [#delta(-0.005)],
-  [#text(size: 10.5pt)[*#delta(+0.005)*]],
+  [#text(size: 9.5pt)[*#delta(+0.005)*]],
   [#delta(+0.004)],
   [#delta(-0.019)],
 
   // test/instance/f1
   [RQ],
-  [#text(size: 10.5pt)[*0.875*]],
+  [#text(size: 9.5pt)[*0.875*]],
   [#delta(-0.081)],
   [#delta(-0.005)],
   [#delta(-0.012)],
@@ -156,12 +156,12 @@
   [#delta(-0.031)],
 
   // test/instance/assd
-  [SQASSD],
+  [SQASSD$arrow.b$],
   [0.392],
   [#deltainv(+0.201)],
   [#deltainv(+0.011)],
   [#deltainv(-0.011)],
-  [#text(size: 10.5pt)[*#deltainv(-0.027)*]],
+  [#text(size: 9.5pt)[*#deltainv(-0.027)*]],
   [#deltainv(+0.178)],
 
   // test/instance/recall
@@ -170,7 +170,7 @@
   [#delta(-0.017)],
   [#delta(-0.012)],
   [#delta(-0.010)],
-  [#text(size: 10.5pt)[*#delta(+0.007)*]],
+  [#text(size: 9.5pt)[*#delta(+0.007)*]],
   [#delta(-0.035)],
 
   // test/cc/dice
@@ -179,7 +179,7 @@
   [#delta(-0.020)],
   [#delta(-0.012)],
   [#delta(+0.005)],
-  [#text(size: 10.5pt)[*#delta(+0.006)*]],
+  [#text(size: 9.5pt)[*#delta(+0.006)*]],
   [#delta(-0.018)],
 
   
@@ -196,7 +196,7 @@
   [0.813],
   [#delta(-0.058)],
   [#delta(-0.003)],
-  [#text(size: 10.5pt)[*#delta(+0.012)*]],
+  [#text(size: 9.5pt)[*#delta(+0.012)*]],
   [#delta(-0.012)],
   [#delta(-0.025)],
 
@@ -205,15 +205,15 @@
   [0.746],
   [#delta(-0.107)],
   [#delta(+0.014)],
-  [#text(size: 10.5pt)[*#delta(+0.022)*]],
+  [#text(size: 9.5pt)[*#delta(+0.022)*]],
   [#delta(-0.066)],
   [#delta(-0.030)],
 
   // test/instance/assd
-  [SQASSD],
+  [SQASSD$arrow.b$],
   [0.386],
   [#deltainv(+0.376)],
-  [#text(size: 10.5pt)[*#deltainv(-0.002)*]],
+  [#text(size: 9.5pt)[*#deltainv(-0.002)*]],
   [#deltainv(+0.015)],
   [#deltainv(+0.187)],
   [#deltainv(+0.687)],
@@ -221,7 +221,7 @@
   // test/instance/recall
   [$"recall"_"inst"$],
   [0.770],
-  [#text(size: 10.5pt)[*#delta(+0.073)*]],
+  [#text(size: 9.5pt)[*#delta(+0.073)*]],
   [#delta(+0.016)],
   [#delta(+0.037)],
   [#delta(+0.059)],
@@ -232,7 +232,7 @@
   [0.630],
   [#delta(+0.009)],
   [#delta(+0.005)],
-  [#text(size: 10.5pt)[*#delta(+0.027)*]],
+  [#text(size: 9.5pt)[*#delta(+0.027)*]],
   [#delta(+0.017)],
   [#delta(+0.005)],
 
@@ -247,10 +247,10 @@
 
   // test/global/dice
   [DSC],
-  [#text(size: 10.5pt)[*0.944*]],
+  [#text(size: 9.5pt)[*0.944*]],
   [#delta(-0.013)],
   [#delta(-0.003)],
-  [#text(size: 10.5pt)[*#delta(+0.000)*]],
+  [#text(size: 9.5pt)[*#delta(+0.000)*]],
   [#delta(-0.007)],
   [#delta(-0.017)],
 
@@ -261,21 +261,21 @@
   [#delta(-0.004)],
   [#delta(-0.025)],
   [#delta(-0.047)],
-  [#text(size: 10.5pt)[*#delta(+0.012)*]],
+  [#text(size: 9.5pt)[*#delta(+0.012)*]],
 
   // test/instance/assd
-  [SQASSD],
+  [SQASSD$arrow.b$],
   [0.151],
   [#deltainv(+0.013)],
   [#deltainv(+0.018)],
-  [#text(size: 10.5pt)[*#deltainv(-0.033)*]],
+  [#text(size: 9.5pt)[*#deltainv(-0.033)*]],
   [#deltainv(-0.006)],
   [#deltainv(+0.046)],
 
   // test/instance/recall
   [$"recall"_"inst"$],
   [0.962],
-  [#text(size: 10.5pt)[*#delta(+0.027)*]],
+  [#text(size: 9.5pt)[*#delta(+0.027)*]],
   [#delta(+0.006)],
   [#delta(+0.017)],
   [#delta(+0.021)],
@@ -286,7 +286,7 @@
   [0.896],
   [#delta(+0.007)],
   [#delta(-0.002)],
-  [#text(size: 10.5pt)[*#delta(+0.019)*]],
+  [#text(size: 9.5pt)[*#delta(+0.019)*]],
   [#delta(+0.013)],
   [#delta(-0.012)],
 

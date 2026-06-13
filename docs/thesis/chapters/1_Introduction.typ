@@ -2,7 +2,7 @@
 
 = Introduction <chapter_introduction>
 
-The use of @ai in the medical domain has been one of the most research-intensive areas of the last decade, sparking substantial advancements in the field of healthcare. In particular, medical image analysis has crystalized as a field where the introduction of machine learning shows considerable promise of increasing the standard of care provided to patients while reducing the burden on clinicians. In this discipline, automated identification of abnormalities or pathologies in diverse medical images helps clinicians plan treatments and guide decision making.
+The use of @ai in the medical domain has been one of the most research-intensive areas of the last decade, sparking substantial advancements in the field of healthcare. In particular, medical image analysis has crystallized as a field where the introduction of machine learning shows considerable promise of increasing the standard of care provided to patients while reducing the burden on clinicians. In this discipline, automated identification of abnormalities or pathologies in diverse medical images helps clinicians plan treatments and guide decision making.
 
 Several such pathologies manifest as a collection of spatially separated, morphologically diverse objects, such as tumor metastases or multiple sclerosis brain lesions. The robust and accurate detection of these individual instances is an ongoing challenge in medical image segmentation, a discipline in which neural networks are tasked with identifying and delineating objects of importance in images.
 
@@ -12,6 +12,6 @@ Due to the complex optimization dynamics of the neural network learning process,
 
 This is a crucial issue in medical image segmentation where smaller tumors can carry the same clinical relevance as larger ones and are critical clues that point clinicians toward early-stage cancer development or metastasization. This problem of a biased performance has attracted several recent studies on possible improvements of segmentation networks.
 
-This thesis presents an investigation of several methods based on Voronoi tessellation to address the issue of size-based biases in the learning process of segmentation networks. In particular, we examine the effect of region-wise loss functions similar to the paradigm proposed by @bouteille2025learning as well as several region-based weight maps as efficient ways to introduce a manual bias into the network in order to steer learning behaviour.
+This thesis presents an investigation of several methods based on Voronoi tessellation to address the issue of size-based biases in the learning process of segmentation networks. In particular, we examine the effect of region-wise loss functions similar to the paradigm proposed by @bouteille2026learning as well as several region-based weight maps as efficient ways to introduce a manual bias into the network in order to steer learning behaviour.
 
 We evaluate our hypotheses across various datasets spanning dimensionality as well as imaging modality and biological scale.

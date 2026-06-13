@@ -76,7 +76,7 @@
   [#text(size: 10.5pt)[*#delta(+0.057)*]],
 
   // test/instance/assd
-  [SQASSD],
+  [SQASSD$arrow.b$],
   [0.802],
   [#deltainv(+2.282)],
   [#deltainv(+0.038)],

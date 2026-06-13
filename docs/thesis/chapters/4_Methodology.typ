@@ -1,4 +1,4 @@
-#import "../utils.typ": todo, class_colors
+#import "../utils.typ": *
 #import "@preview/glossarium:0.5.9": gls
 
 = Methodology <chapter_methodology>
@@ -8,7 +8,7 @@ This section gives a description outlining the concrete implementation of the th
 The practical implementation of this thesis was evaluated against multiple datasets that span dimensionality (2D as well as 3D), modality (@mri, @em) and various anatomical features and pathologies that result in highly varied instance properties. By analyzing our performance on these varied datasets we aim to show that the approaches can be used both on macro-scale @mri pathologies as well as micro-scale @em organelles and are therefore generalizable and indifferent to biological dimension as well as imaging technique.
 
 Since this thesis concerns binary semantic segmentation, all datasets can be abstracted into their constituent components as follows:
-An image of shape $(n_x,n_y)$ ($(n_x,n_y,n_z)$ in the case of 3D) and a binarized label $Y$ of the same shape for each image.
+An image of shape $(N_x,N_y)$ ($(N_x,N_y,N_z)$ in the case of 3D) and a binarized label $Y$ of the same shape for each image.
 
 As introduced in @sec_connectedcomponents, the binary label file can be used to calculate spatially connected instances $I$ using a neighborhood parameter. In this work, 2D connected component analysis exclusively used 8-connectivity, whereas 3D connected components used 26-connectivity (see @figneighborhood for a visual interpretation of these neighborhood parameters).
 
@@ -19,15 +19,17 @@ Prior works in the field have provided comprehensive frameworks for identifying 
 Specifically, we report the following statistics on multi-instance datasets:
 - Number of instances per sample
 - Volume distribution of instances
-- Instance dominance (what fraction of the total foreground the largest instance takes up)
+- Instance dominance (the fraction of the total foreground the largest instance takes up)
 - Instance volume as fraction of containing voronoi region volume
+
+Instance dominance is of particular interest across datasets since it can serve as a statistical identifier for volumetrically biased segmentation if images are dominated by few relatively large components with many smaller instances receiving a lower priority in the learning process. An idealized image with $K$ equally-sized instances should have a dominance of $1/K$.
 
 Adhering to current methods and standards, all datasets have been partitioned into a train, validation and test set, with the train set being used for algorithmic model optimization, the validation (val) set being used for hyperparameter tuning such as learning rate adjustment and the test set being used only once to report the final metrics of the model.
 
 All statistics were calculated on the train and val set only to remain agnostic to the test set.
 
 === Brain Metastases
-The Stanford brainmetshare dataset (@mets:short) @brainmetshare consists of 105 labeled MRI scans with multiple co-registered channels depicting the human brain, with binary labels indicating metastatic cancer lesions. The dataset has been randomly split into (train, validation, test) sets with proportions $(0.7, 0.15, 0.15)$ respectively.
+The Stanford brainmetshare dataset (@mets:short) @brainmetshare consists of 105 labeled MRI scans with multiple co-registered channels depicting the human brain, with binary labels indicating metastatic cancer lesions. The dataset has been randomly split into (train, validation, test) sets with approximate proportions of $(0.7, 0.15, 0.15)$ respectively.
 
 The dataset provides T1-weighted as well as @flair images, which were used as separate channels during training. Labels include at least one brain metastasis.
 
@@ -69,9 +71,11 @@ This dataset presents a critical, high-stakes segmentation challenge. Accurate a
 === White Matter Hyperintensities
 The @wmh dataset @wmhdataset contains 170 T1-weighted and @flair @mri scans with labels indicating the presence of hyperintensities which manifest as especially morphologically diverse instances. The 3D volumes were split into the (train, val, test) sets with ratios of $(0.7, 0.15, 0.15)$.
 
-The statistical analysis in @figwmhmetrics shows that images typically contain dozens to hundreds of white matter hyperintensitiy instances with the lesions in the sample image appearing irregularly shaped and scattered.
+The statistical analysis in @figwmhmetrics shows that images typically contain dozens to hundreds of white matter hyperintensity instances with the lesions in the sample image appearing irregularly shaped and scattered.
 
-While the vast majority of instances are only made up of a few voxels, with a median instance size of 5, a single connected component can also span up to 10,000 voxels. The instance dominance chart also shows that even in images with over 20 instances, the largest one often makes up over 50% of all foreground vpxels. On average, instances occupy $<1%$ of their assigned region. This can be explained similarly to the @mets dataset, since the vast amount of background voxels dominates the relatively few foreground voxels in a given region.
+While the vast majority of instances are only made up of a few voxels, with a median instance size of 5, a single connected component can also span up to 10,000 voxels. The instance dominance chart also shows that even in images with over 20 instances, the largest one often makes up over 50% of all foreground voxels. This can be explained with the general manifestation of white matter hyperintensites in periventricular white matter areas, which results in voluminous, elongated instances in the deep regions of the brain (see the yellow and gray instances in the sample of @figwmhmetrics) while also manifesting as smaller lesions in the general cerebrum @merino2019white. On average, instances occupy $<1%$ of their assigned region. This can be explained similarly to the @mets dataset, since the vast amount of background voxels dominates the relatively few foreground voxels in a given region.
+
+The contrast in the instance volume distribution of @wmh lesions to brain metastases shows that metastases are in general much larger while most hyperintensities are smaller than 10 voxels even though the largest components of both can present as equally voluminous.
 
 The @wmh dataset also provides a clinically highly relevant segmentation dataset with hyperintensities acting as a biomarker for several neurological pathologies including ischemic strokes and dementia @li2024association.
 
@@ -107,7 +111,7 @@ The @wmh dataset also provides a clinically highly relevant segmentation dataset
 === Platelet Organelles
 In the platelet organelles dataset, @em was used to image multiple human blood platelet cells and expert labels were created indicating multiple types of organelles @plateletdataset. Of particular interest to this work are the canalicular vessels and alpha granules as they are present in high numbers and varied shapes and sizes in each platelet cell.
 
-The 72 individual 2D slices of shape (800*800) were extracted from the original .tiff files and split into (train, val, test) with proportions $(0.6, 0.2, 0.2)$ from each file. This served as a means to gather more generalized data since intensities between scans can vary greatly.
+The 72 individual 2D slices of shape (800*800) were extracted from the original .tiff files and split into (train, val, test) with proportions $(0.6, 0.2, 0.2)$ from each file. This served as a means to gather more generalized data since intensities between scans can vary greatly. All slices were treated as separate 2D images for the calculation of connected components, metrics, and input to the segmentation network.
 
 Both @cv and @ag provide a diverse landscape of connected components. @figplateletcvmetrics and @figplateletagmetrics show dataset samples and statistics of these organelles respectively. Comparatively, alpha granule instances are much larger than canalicular vessels, though there are a fewer of them in each image. As a fraction of the containing voronoi fraction, they share a similar distribution, since on average both @cv and @ag instances make up $3-5%$ of the region they seeded.
 #figure(
@@ -136,7 +140,7 @@ Both @cv and @ag provide a diverse landscape of connected components. @figplatel
     move(dy: -5pt,
     image("../figures/metrics/cv/voronoi_fraction.png", width: 50%)),
   ),
-  caption: [Statistical and visual overview of the @cv:long (@cv) dataset. Top left shows a sample image slice with colored instances. Top right shows a histogram of the number of instances per image. The center histogram shows the volume distribution of instances. The bottom left scatter plot shows the relative dominance of the largest instance in a volume. The bottom right violin plot shows the ratio of foreground to background voxels within voronoi regions.
+  caption: [Statistical and visual overview of the @cv:long (@cv) dataset. Top left shows a sample image slice with colored instances. Top right shows a histogram of the number of instances per image. The center histogram shows the volume distribution of instances. The bottom left scatter plot shows the relative dominance of the largest instance in a volume. Bottom right shows the ratio of foreground to background voxels within voronoi regions.
   ],
 ) <figplateletcvmetrics>
 
@@ -168,7 +172,7 @@ Both canalicular vessels and alpha granules are important components of platelet
     move(dy: -5pt,
     image("../figures/metrics/ag/voronoi_fraction.png", width: 50%)),
   ),
-  caption: [Statistical and visual overview of the @ag:long (@ag) dataset. Top left shows a sample image slice with colored instances. Top right shows a histogram of the number of instances per image. The center histogram shows the volume distribution of instances. The bottom left scatter plot shows the relative dominance of the largest instance in a volume. The bottom right violin plot shows the ratio of foreground to background voxels within voronoi regions.
+  caption: [Statistical and visual overview of the @ag:long (@ag) dataset. Top left shows a sample image slice with colored instances. Top right shows a histogram of the number of instances per image. The center histogram shows the volume distribution of instances. The bottom left scatter plot shows the relative dominance of the largest instance in a volume. Bottom right shows the ratio of foreground to background voxels within voronoi regions.
   ],
 ) <figplateletagmetrics>
 
@@ -203,21 +207,112 @@ The EPFL @mit dataset introduced by Lucchi et al. @epflmitochondria is another @
     move(dy: -5pt,
     image("../figures/metrics/mit/voronoi_fraction.png", width: 50%)),
   ),
-  caption: [Statistical and visual overview of the @mit:long (@mit) dataset. Top left shows a sample image slice with colored instances. Top right shows a histogram of the number of instances per image. The center histogram shows the volume distribution of instances. The bottom left scatter plot shows the relative dominance of the largest instance in a volume. The bottom right violin plot shows the ratio of foreground to background voxels within voronoi regions.
+  caption: [Statistical and visual overview of the @mit:long (@mit) dataset. Top left shows a sample image slice with colored instances. Top right shows a histogram of the number of instances per image. The center histogram shows the volume distribution of instances. The bottom left scatter plot shows the relative dominance of the largest instance in a volume. Bottom right shows the ratio of foreground to background voxels within voronoi regions.
   ],
 ) <figepflmetrics>
 
 Neuronal mitochondria are some of the most energy-demanding organelles of the body, and their natural function is maintaining nominal cognitive capabilities. A dysfunction in mitochondria often manifests as morphological variation such as swelling or altered spatial distribution. These structural alterations are heavily implicated in several neurological diseases such as Alzheimers and Huntingtons, among others @sirois2026mitochondrial.
 
+=== Comparative Dataset Summary <sec_datasetsummary>
+@tabdatasetsummary presents a summary and comparison table of all datasets. It shows the diverse segmentation targets, image dimensions, the number of samples used for training, evaluation and testing and the volumetric quartiles of all connected component instances in the dataset. 
+#figure(
+table(
+  columns: (0.075fr, 0.075fr, 0.075fr, 0.175fr, 0.125fr, 0.15fr),
+  stroke: (
+    y: 1pt + luma(220),
+    x: none
+  ),
+  inset: 8pt,
+  table.header(
+    table.cell(align:horizon)[Dataset], table.cell(align:horizon)[Modality],table.cell(align:horizon)[Dimension], table.cell(align:horizon)[Segmentation Target], table.cell(align:horizon)[Samples\ (train, val, test)], table.cell(align:horizon)[Volumetric Quartiles [Q1,Q2,Q3]],
+  ),
+  table.hline(start: 1, stroke: 1pt + luma(150)),
+  table.cell(
+    rowspan: 1, 
+    align: center + horizon,
+    stroke: (right: 2pt + datasetcolors.at(0), y: none), // Pretty blue vertical bar
+    text(weight: "bold", fill: datasetcolors.at(0))[METS]
+  ),
+  [@mri],
+  [3D],
+  [Brain metastases],
+  [(74, 17, 14)],
+  [[13, 29, 84]vx],
+  table.cell(
+    rowspan: 1, 
+    align: center + horizon,
+    stroke: (right: 2pt + datasetcolors.at(1), y: none), // Pretty blue vertical bar
+    text(weight: "bold", fill: datasetcolors.at(1))[WMH]
+  ),
+  table.cell(
+    rowspan: 1, 
+    align: center + horizon,
+  )[@mri],
+  table.cell(
+    rowspan: 1, 
+    align: center + horizon,
+  )[3D],
+  table.cell(
+    rowspan: 1, 
+    align: center + horizon,
+  )[White matter hyperintensities],
+  table.cell(
+    rowspan: 1, 
+    align: center + horizon,
+  )[(118, 25, 27)],
+  table.cell(
+    rowspan: 1, 
+    align: center + horizon,
+  )[[3, 5, 13]vx],
+  table.cell(
+    rowspan: 1, 
+    align: center + horizon,
+    stroke: (right: 2pt + datasetcolors.at(2), y: none), // Pretty blue vertical bar
+    text(weight: "bold", fill: datasetcolors.at(2))[CV]
+  ),
+  table.cell(
+    rowspan: 1, 
+    align: center + horizon,
+  )[@em],
+  [2D],
+  [Canalicular Vessels],
+  [(44, 15, 15)],
+  [[165, 274, 456]px],
+  table.cell(
+    rowspan: 1, 
+    align: center + horizon,
+    stroke: (right: 2pt + datasetcolors.at(3), y: none), // Pretty blue vertical bar
+    text(weight: "bold", fill: datasetcolors.at(3))[AG]
+  ),
+  [@em],
+  [2D],
+  [Alpha granules],
+  [(44, 15, 15)],
+  [[478, 901, 1440]px],
+  table.cell(
+    rowspan: 1, 
+    align: center + horizon,
+    stroke: (right: 2pt + datasetcolors.at(4), y: none), // Pretty blue vertical bar
+    text(weight: "bold", fill: datasetcolors.at(4))[MIT]
+  ),
+  [@em],
+  [2D],
+  [Mitochondria],
+  [(165, 82, 83)],
+  [[1412, 2274, 3758]px],
+),
+  caption: [A summary overview of all used datasets with identifiable abbreviations and consistent color code for reference. Volumetric quartiles of foreground instances are given in voxels (vx) for 3D and pixels (px) in 2D. The fourth quartile Q4 includes all instances larger than Q3.],
+)<tabdatasetsummary>
+
 == Segmentation Evaluation Metrics <sec_metrics>
-Many works have previously discussed the importance of the choice of metrics and the need to adapt to the specific task at hand, Maier et al. @maier2022metrics have provided concrete guidance in the choice of instance-wise metrics in segmentation problems and Kofler et al. @kofler2023panoptica provide a tool to calculate many of these metrics.
+Many works have previously discussed the importance of the choice of metrics and the need to adapt to the specific task at hand, Maier-Hein et al. @maier2022metrics have provided concrete guidance in the choice of global as well as instance-wise metrics in segmentation problems and Kofler et al. @kofler2023panoptica provide a tool to calculate many of these metrics.
 
 Additionally, Jaus et al. @jaus2025every proposed a family of metrics that are of particular interest to us since they use voronoi tesselation to aggregate metrics on each region separately and average them to identify learned instance imbalance during evaluation.
 
 This section will provide a comprehensive overview of the metrics of interest, the rationales behind their choice and supplementary information on how predicted segmentations were evaluated. We further divide metrics into three categories: global, instance-wise, and region-wise indicating the information used in the computation.
 
 === Global Metrics
-Global metrics operate simply on the label $Y$ and the prediction $hat(Y)$, they do not take instances or regions into account and are calculated solely on the number of pixels classified as @tp, @tn:short, @fp, @fn.
+Global metrics operate on the label $Y$ and the prediction $hat(Y)$, they do not take instances or regions into account and are calculated solely on the number of pixels classified as @tp, @tn:short, @fp, @fn (see @taberrorclassification).
 
 Two metrics often seen as complementary are precision and recall (which are also known as specificity and sensitivity respectively):
 $
@@ -262,11 +357,11 @@ $<eqrecognitinquality>
 
 Both precision precision (@eqprecision) and recall (@eqrecall) have similar instance-wise counterparts, with instance recall being of particular interest when considering multi-instance datasets in a medical setting. If all label components have a matching predicted component, the instance recall is $1$, if half of them have a matching prediction, the value drops to $0.5$. The label and prediction overlay in @figinstancematching would have an instance recall of $frac(2,3)$ due to 2 of the 3 label instances having matched counterparts.
 
-This can be extended by calculating instance recall by volume. As stated previously in @instance_imbalance, lesion size often has no direct correlation with clinical relevance in many pathologies, but models tend to miss smaller instances and focus on larger ones @kofler2023blobloss @bouteille2025learning. As such, quantifying how well a model can spot instances with lower volume can be especially important when this small instance could be a malignant tumor. Therefore, previous works have proposed instance recall by volume, where all connected components are partitioned into e.g. quartiles based on their volume and $"recall"_"inst"$ is computed on them separately, resulting in $("recall"_"inst"_"Q1", "recall"_"inst"_"Q2", "recall"_"inst"_"Q3","recall"_"inst"_"Q4")$. This gives us a comparable measure how well small instances are recognized compared to larger ones.
+This can be extended by calculating instance recall by volume. As stated previously in @instance_imbalance, lesion size often has no direct correlation with clinical relevance in many pathologies, but models tend to miss smaller instances and focus on larger ones @kofler2023blobloss @bouteille2026learning. As such, quantifying how well a model can spot instances with lower volume can be especially important when this small instance could be a malignant tumor. Therefore, previous works have proposed instance recall by volume, where all connected components are partitioned into e.g. quartiles based on their volume and $"recall"_"inst"$ is computed on them separately, resulting in $("recall"_"inst"_"Q1", "recall"_"inst"_"Q2", "recall"_"inst"_"Q3","recall"_"inst"_"Q4")$. This gives us a comparable measure how well small instances are recognized compared to larger ones.
 
-@sqassd is a boundary based metric that calculates the average deviation of a prediction instance surface to its matched label surface. This means that the lower this metric is, the closer the prediction adheres to the label. Perfect predictions would naturally have an @sqassd of 0. 
+@sqassd is a boundary based metric that calculates the average deviation of a prediction instance surface to its matched label surface in pixels or voxels. This means that the lower this metric is, the closer the prediction adheres to the label. Perfect predictions would therefore have an @sqassd of 0.
 
-@sqdsc is the last of the truly instance-wise metrics we considered and measures the @Dsc averaged over all $"TP"_"inst"$ instances. In the set of all matched instances $cal(I) = {(I_p, I_g) | I_p in hat(I), I_g in I}$ identified by the matching algorithm, @sqdsc can be calculated as:
+@sqdsc is the last of the truly instance-wise metrics we considered and measures the @dsc averaged over all $"TP"_"inst"$ instances. In the set of all matched instances $cal(I) = {(I_p, I_g) | I_p in hat(I), I_g in I}$ identified by the matching algorithm, @sqdsc can be calculated as:
 
 $
   "SQDSC"(cal(I)) = frac(1,|"TP"_"inst"|)sum_((I_p, I_g) in cal(I))"DSC"(I_p, I_g)
@@ -275,24 +370,30 @@ $
 Since this metric is calculated only on matched instances, we can again separate the label based on instance volume for the calculation of $("SQDSC"_"Q1", "SQDSC"_"Q2", "SQDSC"_"Q3", "SQDSC"_"Q4")$, to analyze segmentation performance across instance volume quartiles particularly in smaller components to validate our hypotheses of addressing the instance imbalance problem.
 
 === Region-Wise Metrics
-Connected-component metrics are a family of segmentation evaluation statistics introduced by Jaus et al. @jaus2025every that leverage voronoi regions $R$ computed on the labels $Y$ and seeded by the ground truth instances $I$. In an image, each voronoi region $R_k in R$ is considered separately by masking out everything outside the particular region, calculating an arbitrary pixel-wise metric such as @dsc ($F_1$) and averaging the scores across all regions:
+Connected-component metrics are a family of segmentation evaluation statistics introduced by Jaus et al. @jaus2025every that leverage voronoi regions $R$ computed on the labels $Y$ and seeded by the ground truth instances $I$. In an image, each Voronoi region $R_k in R$ is considered separately. The voxels of the label $Y$ of a particular region are therefore:
 
 $
-  "CCDice"(Y, hat(Y)) = frac(sum_(k=1)^K F_1(Y inter R_k, hat(Y) inter R_k), K)
+  Y_R_k = (y_n)_(n in R_k)
+$
+
+With $hat(Y)_R_k$ and $tilde(Y)_R_k$ being defined analagously. Then, an arbitrary pixel-wise metric such as @dsc ($F_1$) can be calculated per region and averaged across the image:
+
+$
+  "CCDice"(Y, hat(Y)) = frac(1,K) sum_(k=1)^K F_1(Y_R_k, hat(Y)_R_k)
 $
 
 CCDice is of particular interest as a metric, as it incorporates the notion that all regions and their instances are equally important.
 
 == Loss Formulations and Weighted Combination<sec_loss_functions_method>
-This section provides concrete formulations of the loss functions that were used and compared during the course of our experimentation, since there are many loss functions to choose from and the introduction of hyperparaters makes a complete comparrison untractable, we will limit ourselves to some of the most common losses in medical image segmentation introduced in @sec_lossfunctionsbg as a basis and propose several augmentations to them.
+This section provides concrete formulations of the loss functions that were used and compared during the course of our experimentation, since there are many loss functions to choose from and the introduction of hyperparaters makes a complete comparison untractable, we will limit ourselves to some of the most common losses in medical image segmentation introduced in @sec_lossfunctionsbg as a basis and propose several augmentations to them.
 
 @sec_voronoi_loss describes the region-wise paradigm based on Voronoi regions that can be applied to arbitrary loss functions. @sec_weight_maps_method introduces several novel weight maps aimed to provide an efficient way to steer model behaviour.
 
 === Voronoi-based Region Wise Loss <sec_voronoi_loss>
-We define a Voronoi-based loss similarly to CC-Loss introduced by Bouteille et al. @bouteille2025learning as the average region-wise loss across all Voronoi regions $R$ using an arbitrary loss function $cal(L)$:
+We define a Voronoi-based loss similarly to CC-Loss introduced by Bouteille et al. @bouteille2026learning as the average region-wise loss across all Voronoi regions $R$ using an arbitrary loss function $cal(L)$:
 
 $
-  cal(L)_"Voronoi" (Y,tilde(Y)) =sum_(R_k in R) frac(cal(L)(Y inter R_k, tilde(Y) inter R_k),K)
+  cal(L)_"Voronoi" (Y,tilde(Y)) = frac(1,K) sum_(k=1)^K cal(L)(Y_R_k, tilde(Y)_R_k)
 $<eqvoronoiloss>
 
 @figvoronoiloss shows the process on a label with $K=3$ regions. The labels and predictions from each region are passed to the loss function and their signals are averaged.
@@ -303,7 +404,7 @@ $<eqvoronoiloss>
     align: center + horizon,
     image("../figures/VoronoiLoss.png", width: 85%),
   ),
-  caption: [An example of Voronoi-based region-wise loss. The labels $Y$ and their connected components are used to compute the Voronoi regions $R$. The labels and the predicted segmentation probabilities from the model $tilde(Y)$ are then masked using the regions and the region-wise loss is averaged across them. For visual simplicity, continuous probabilities are binarized in the top right image.
+  caption: [An example of Voronoi-based region-wise loss. The labels $Y$ and their connected components are used to compute the Voronoi regions $R$. The labels and the predicted segmentation probabilities from the model $tilde(Y)$ are then masked using the regions and the region-wise loss is averaged across them. For visual simplicity, continuous probabilities in the top right image are binarized.
   ],
 ) <figvoronoiloss>
 
@@ -313,7 +414,7 @@ $
   cal(L)_"total" = alpha * cal(L)_"global" + beta * cal(L)_"Voronoi"
 $<eqtotalloss>
 
-In this work, we examine several combinations of weights as well as several different loss functions for both $cal(L)_"global"$ and $cal(L)_"Voronoi"$. During those experiments, it is crucial that the total loss magnitude is kept consistent, in order to avoid implicit scaling of the gradients, altering the effective learning rate @kofler2023blobloss. For this, two user-specified hyperparameter weights $hat(alpha)$ and $hat(alpha)$ are normalized in the following fashion:
+In this work, we examine several combinations of weights as well as several different loss functions for both $cal(L)_"global"$ and $cal(L)_"Voronoi"$. During those experiments, it is crucial that the total loss magnitude is kept consistent, in order to avoid implicit scaling of the gradients, altering the effective learning rate @kofler2023blobloss. For this, two user-specified hyperparameter weights $hat(alpha)$ and $hat(beta)$ are normalized in the following fashion:
 $
   alpha = frac(hat(alpha), hat(alpha) + hat(beta)), beta = frac(hat(beta), hat(alpha) + hat(beta))
 $<eqgloballocalweights>
@@ -326,11 +427,11 @@ Weight maps, as previously described in @sec_weight_maps_bg, provide a way to em
 This section provides several examples of novel weight maps calculated on voronoi regions. As a basis, the "none" weight map $W_"none"$ as the unit tensor can be seen as the standard case, assigning every pixel the same weight, therefore changing nothing in the final calculation when integrated into the loss function:
 $
   W_"none" = {w_1, w_2, dots, w_N | w_n = 1}
-$
+$<eqvnone>
 
 Given the constraint of a weight map sum having to equal $N$, a weight map can be seen as the distribution of a total "budget" of $N$ with $W_"none"$ distributing this budget equally to every pixel.
 
-Any of the subsequently introduced discussed weight maps can be easily incorporated into arbitrary loss functions. The loss functions discussed in @sec_lossfunctionsbg can be adapted into their weighted counterparts with $w_n$ being the value of the weight map voxel at the same location as $y_n$ and $tilde(y)_n$ in the label and prediction respectively:
+Any of the subsequently introduced weight maps can be easily incorporated into arbitrary loss functions. The loss functions discussed in @sec_lossfunctionsbg can be adapted into their weighted counterparts with $w_n$ being the value of the weight map voxel at the same location as $y_n$ and $tilde(y)_n$ in the label and prediction respectively:
 
 $
   cal(L)_"Dice"_w (Y,tilde(Y))=1-frac(2 sum_(n=1)^N w_n tilde(y)_(n)y_n, sum_(n=1)^N w_n (tilde(y)_n^2+y_n^2))
@@ -346,11 +447,15 @@ $
   1-frac(sum_(n=1)^N w_n tilde(y)_n y_n, sum_(n=1)^N w_n tilde(y)_n y_n + alpha_"T" sum_(n=1)^N w_n tilde(y)_n (1-y_n) + beta_"T" sum_(n=1)^N w_n (1-tilde(y)_n) y_n)
 $<eqLTverskyweighted>
 
+We set $alpha_"T", beta_"T"$ to 0.3 and 0.7 respectively, reducing the penalty of @fp pixels and increasing it for @fn pixels compared to @dsc. These values were identified in by Salehi et al. @salehi2017tversky as achieving the best results in their study.
+
+We now present several weight maps aimed at counteracting unwanted loss behaviour in multi-instance segmentation cases. They all rely on the underlying principle of the tessellation of the image into instance-based Voronoi regions and using weights to control the importance of those regions and the instances within them.
+
 ==== Equal Region Weights<secvregion>
-The equal region weights map $W_"v_region"$ is a naive way to equalize the weights around all instances, not just in the foreground pixels $I_k$, but also in the background pixels that belong to the same voronoi region $R_k$.
+The equal region weights map $W_"v_region"$ is a naive approach to equalize the weights of all regions $R$, not just in the foreground pixels $I_k$, but also in the background pixels that belong to the same voronoi region $R_k$.
 
 $
-w_n = frac(N,K|R_k|) quad quad  "if" y_n in R_k
+w_n = frac(N,K|R_k|) quad quad  "if" n in R_k
 $<eqvregion>
 
  @figvregionmap shows the weight map calculated on the sample image. The tessellation into voronoi regions is apparent and regions with fewer pixels receive a higher pixel-wise weight. The idea behind this map is that all regions and therefore all instances within them are equalized in importance by dividing the budget of $N$ among all regions.
@@ -366,16 +471,16 @@ $<eqvregion>
 ) <figvregionmap>
 
 ==== Voronoi Inverse Weighting<secviw>
-Voronoi inverse weighting maps $W_"v_iw"$ aim to combine the concept of inverse weighting introduced by Shirokikh et al. @shirokikh2020universal with voronoi regions, assigning all regions equal budget and within them, dividing that budget equally between the background and foreground pixels:
+Voronoi inverse weighting maps $W_"v_iw"$ aim to combine the concept of inverse weighting introduced by Shirokikh et al. @shirokikh2020universal with Voronoi regions, assigning all regions equal budget and dividing that budget equally between the background and foreground pixels and within them:
 
 $
 w_n = cases(
-  frac(N,2K|R_k|-|I_k|) quad quad  "if" y_n in R_k "and" y_n = 0, 
-  frac(N,2K|I_k|) quad quad  quad quad  "if" y_n in R_k "and" y_n = 1
+  frac(N,2K|R_k \\ I_k|) quad quad  "if" n in R_k "and" y_n = 0, 
+  frac(N,2K|I_k|) quad quad  quad quad  "if" n in R_k "and" y_n = 1
 )
 $<eqviw>
 
-@figviwmap demonstrates an example $W_"v_iw"$ map, even though the entire budget is split equally among regions, the voronoi regions are not as apparent as in @figvregionmap, this is due to the much higher weight foground instances receive, making the background across regions close, but not equal.
+@figviwmap demonstrates an example $W_"v_iw"$ map, even though the entire budget is split equally among regions, the Voronoi regions are not as apparent as in @figvregionmap, this is due to the much higher weight foground instances receive, making the background across regions close, but not equal.
 
 This aims to be a less aggressive and more equalized approach than @iw and although the two maps are mathematically equal if an image contains only a single instance, it inhibits very small connected components and possible single-pixel annotation errors from dominating the weights since they are always bound by the equalized region budget.
 
@@ -390,7 +495,7 @@ This aims to be a less aggressive and more equalized approach than @iw and altho
 ) <figviwmap>
 
 ==== Voronoi Mountains<secvmountains>
-The Voronoi mountains map $W_"v_mountains"$ utilizes the euclidean distance function $"dist"$ which returns the distance from a given pixel to the surface of an instance. Furthermore a hyperparameter $sigma_m$ scales an exponential weight decay as distance to an instance increases. For any region $R_k$, this gives rise to $S_k = sum_(j in R_k \\ I_k) exp(-"dist"(j, I_k)/sigma_m)$, the sum of background decay in the region. This is used in the construction of each weight map pixel:
+The Voronoi mountains map $W_"v_mountains"$ utilizes the euclidean distance function $"dist"$ which returns the distance from a given pixel to the surface of an instance. Furthermore a hyperparameter $sigma_m = 2$ scales an exponential weight decay as distance to an instance increases. For any region $R_k$, this gives rise to $S_k = sum_(j in R_k \\ I_k) exp(-"dist"(j, I_k)/sigma_m)$, the sum of background decay in the region. This is used in the construction of each weight map pixel:
 
 $
 w_n = cases(
@@ -414,7 +519,7 @@ $W_"v_mountains"$ is intended to produce predictions that are highly accurate ar
 ) <figvmountainsmap>
 
 ==== Voronoi Islands<secvislands>
-Voronoi islands are a concept similar, yet also inverse of the $W_"v_mountains"$ map. All regions again receive the same budget, weighing smaller regions higher. The weights now also scale with the euclidean distance from an instance $"dist"$. $sigma_i$ is another scaling factor that determines the sum of the background growth $Z_k$ in a given region $Z_k = sum_(j in R_k \\ I_k) 1-exp(-"dist"(j, I_k)/sigma_i)$.
+Voronoi islands are a concept similar, yet also inverse of the $W_"v_mountains"$ map. All regions again receive the same budget, weighing smaller regions higher. The weights now also scale with the euclidean distance from an instance $"dist"$. $sigma_i=5$ is a scaling factor that determines the sum of the background growth $Z_k$ in a given region $Z_k = sum_(j in R_k \\ I_k) 1-exp(-"dist"(j, I_k)/sigma_i)$ and provides a balance between instance weight and background accumulation.
 
 $
 w_n = cases(
@@ -449,7 +554,7 @@ $
 w_n = frac(N, sum_(j=1)^N v_j) v_n
 $
 
-@figvadaptive Shows a sample of the weight map that contains prediction outputs from a classifier and how these predictions impact the costruction of the weight map. In this case, the model failed to predict 4 instances, meaning that the regions these instances belong to receive a higher weight. After the specific map has been calculated for all regions in the prediction, it is incorporated into the loss function.
+@figvadaptive Shows a sample of the weight map that contains prediction outputs from a classifier and how these predictions impact the construction of the weight map. In this case, the model failed to predict 4 instances, meaning that the regions these instances belong to receive a higher weight. After the specific map has been calculated for all regions in the prediction, it is incorporated into the loss function.
 
 #figure(
     image("../figures/weight_maps/v_adaptive.png", width: 45%),
@@ -458,9 +563,10 @@ $
 ) <figvadaptive>
 
 == Model Architecture<sec_modelarchitecture>
-This section describes the technical setup used in the construction of the training pipeline and the architecture of the adaptive neural network used in experiments #footnote([The network implementation and additional resources are freely available on #link("https://github.com/ossner/VoronoiLoss", "github.com")]).
+This section describes the technical setup used in the construction of the training pipeline and the architecture of the adaptive neural network used in experiments #footnote([The network implementation and additional resources are freely available on #link("https://github.com/ossner/VoronoiLoss", "github.com/ossner/VoronoiLoss")]).
+
 === Adaptive U-Net
-The model architecture used in all experiments is based on the U-Net architecture introduced by Ronneberger et al. @ronneberger2015u specifically for the use in biomedical image segmentation. The implementation from MONAI @cardoso2022monai was parametrized based on the dataset to change the spatial dimenstion (2D vs. 3D) and the nuber of input channels available.
+The model architecture used in all experiments is based on the U-Net architecture introduced by Ronneberger et al. @ronneberger2015u specifically for the use in biomedical image segmentation. The implementation from MONAI @cardoso2022monai was parametrized based on the dataset to change the spatial dimenstion (2D vs. 3D) and the number of input channels available.
 
 Since the 3D datasets provide additional co-registered MRI imaging procedures of the same sample, both T1-weighted images as well as @flair images were used as inputs for the 3D network, with the 2D network receiving only the single-channel intensity image provided by @em.
 
@@ -479,34 +585,62 @@ Since the label files used in loss calculations are static and do not change, ef
   caption: [Demonstration of the preprocessing pipeline. Labels from the dataset are used for computation of instances, voronoi maps and weight maps and then combined with the accompanying image through a patching process. This results in the total batch information available during training.],
 ) <figprecomputation>
 
-The introduction of image patching, a common method in segmentation to divide individual samples into many into smaller regions of interest, makes precomputation necessary, since calculation of these tensors on-the-fly can introduce several artifacts that do not represent the original data#footnote([An example of such an artifact could be an instance that is split on the edges of the patch, resulting in two voronoi regions from the same component.]). Image patching extracts multiple sub-images from a larger original sample, diversifying training data when combined with augmentations.
+The introduction of image patching, a common method in segmentation to divide individual samples into many into smaller regions of interest, makes precomputation necessary, since calculation of these tensors on-the-fly can introduce several artifacts that do not represent the original data. An example of such an artifact could be an instance that is split on the edges of the patch, resulting in two voronoi regions from the same component. Image patching extracts multiple sub-images from a larger original sample, diversifying training data when combined with augmentations.
 
 @tabpatching shows the patching parameters used for the training on the different datasets. The overall patching algorithm is based on a positive and negative label approach implemented in the popular MONAI library for medical machine learning @cardoso2022monai, in which the patch location is randomly centered on foreground or background pixels with a ratio of 2:1. When a patching location has been chosen, the sub-image is cropped from all accompanying precomputed weight maps at the same location.
 #figure(
 table(
   columns: (auto, auto, auto, auto),
-  inset: 8pt,
-  align: horizon,
+  stroke: (
+    x: none,
+    y: 1pt + luma(220),
+  ),
+  inset: 6pt,
   table.header(
     [*Dataset*], [*Source Image Size*], [*Patch RoI*], [*Number of Patches*],
   ),
-  [@mets],
+  table.cell(
+    rowspan: 1, 
+    align: center + horizon,
+    stroke: (right: 2pt + datasetcolors.at(0), y: none), // Pretty blue vertical bar
+    text(weight: "bold", fill: datasetcolors.at(0))[METS]
+  ),
   [$(256,256,150)$],
   [$(96,96,64)$],
   [20],
-  [@wmh],
+  table.cell(
+    rowspan: 1, 
+    align: center + horizon,
+    stroke: (right: 2pt + datasetcolors.at(1), y: none), // Pretty blue vertical bar
+    text(weight: "bold", fill: datasetcolors.at(1))[WMH]
+  ),
   [$~(240,240,48)$],
   [$(64,64,48)$],
   [16],
-  [@cv],
+  table.cell(
+    rowspan: 1, 
+    align: center + horizon,
+    stroke: (right: 2pt + datasetcolors.at(2), y: none), // Pretty blue vertical bar
+    text(weight: "bold", fill: datasetcolors.at(2))[CV]
+  ),
   [$(800,800)$],
   [$(288, 288)$],
   [25],
-  [@ag],
+  table.cell(
+    rowspan: 1, 
+    align: center + horizon,
+    stroke: (right: 2pt + datasetcolors.at(3), y: none), // Pretty blue vertical bar
+    text(weight: "bold", fill: datasetcolors.at(3))[AG]
+  ),
   [$(800,800)$],
   [$(288, 288)$],
   [25],
-  [@mit],
+  table.cell(
+    rowspan: 1, 
+    align: center + horizon,
+    stroke: (right: 2pt + datasetcolors.at(4), y: none), // Pretty blue vertical bar
+    text(weight: "bold", fill: datasetcolors.at(4))[MIT]
+  ),
   [$(1024,768)$],
   [$(512, 512)$],
   [16],
@@ -523,37 +657,69 @@ In addition to the patching parameters in @tabpatching, this section gives a des
 #figure(
 table(
   columns: (auto, auto, auto, auto),
-  inset: 8pt,
-  align: horizon,
+  stroke: (
+    x: none,
+    y: 1pt + luma(220),
+  ),
+  inset: 6pt,
   table.header(
     [*Dataset*], [*Learning Rate*], [*Batch Size*], [*Num. Training Epochs*],
   ),
-  [@mets],
+  table.cell(
+    rowspan: 1, 
+    align: center + horizon,
+    stroke: (right: 2pt + datasetcolors.at(0), y: none), // Pretty blue vertical bar
+    text(weight: "bold", fill: datasetcolors.at(0))[METS]
+  ),
   [$0.001$],
   [$8$],
   [$500$],
-  [@wmh],
+  table.cell(
+    rowspan: 1, 
+    align: center + horizon,
+    stroke: (right: 2pt + datasetcolors.at(1), y: none), // Pretty blue vertical bar
+    text(weight: "bold", fill: datasetcolors.at(1))[WMH]
+  ),
   [$0.001$],
   [$16$],
   [$500$],
-  [@cv],
+  table.cell(
+    rowspan: 1, 
+    align: center + horizon,
+    stroke: (right: 2pt + datasetcolors.at(2), y: none), // Pretty blue vertical bar
+    text(weight: "bold", fill: datasetcolors.at(2))[CV]
+  ),
   [$0.001$],
   [$16$],
   [$300$],
-  [@ag],
+  table.cell(
+    rowspan: 1, 
+    align: center + horizon,
+    stroke: (right: 2pt + datasetcolors.at(3), y: none), // Pretty blue vertical bar
+    text(weight: "bold", fill: datasetcolors.at(3))[AG]
+  ),
   [$0.001$],
   [$16$],
   [$300$],
-  [@mit],
+  table.cell(
+    rowspan: 1, 
+    align: center + horizon,
+    stroke: (right: 2pt + datasetcolors.at(4), y: none), // Pretty blue vertical bar
+    text(weight: "bold", fill: datasetcolors.at(4))[MIT]
+  ),
   [$0.001$],
   [$16$],
   [$300$],
 ),
-  caption: [An overview of the hyperparameters used during training for each dataset.],
+  caption: [A summary overview of the dataset hyperparameters used during training for each dataset.],
 )<tabhparams>
 
 Data augmentations were used to increase the size of the available training data and make the model more robust and generalizable. These augmentations are also implemented in MONAI and offer an efficient and standardized way to apply both spatial- as well as intensity-based augmentations. All samples are passed through a base transformation pipeline that normalizes image intensities, only data from the train set then goes through standard random spatial augmentations such as rotations, flips and zooms. Only images from the training set also go through randomized intensity-based transforms, leaving the additional precomputed information seen in @figprecomputation as-is.
 
-In order to remain relatively metric-agnostic and avoid checkpoints that are biased towards a specific measurement in our evaluation, all models were trained to completion using the configurations described above and the final model weights were used to generate test results. #todo("Hendrik commented that this is still unclear, but unsure on what to add further")
+In order to remain metric-agnostic and avoid checkpoints that are biased towards a specific measurement in our evaluation, all models were trained to completion using the configurations described above and the model weights from the last training epoch were used to generate test results. This enables a holistic interpretation of the test results without the possibility of a checkpoint being biased towards its highest-performing validation metric.
 
-With this technical setup, we evaluated several modifications of the formula presented in @eqtotalloss including different compound loss functions as well as modifying the global and local weights. We consider standard $cal(L)_"DiceCE"$ operating globally on the image as a baseline. We further analyze the effect weight maps have on this baseline loss. To improve readability, the formula $cal(L)_"total" = hat(alpha) * cal(L)_"global" + hat(beta) * cal(L)_"Voronoi"$ is simplified to a tuple with the baseline being represented as (DiceCE, none).
+With this technical setup, we evaluated several modifications of the formula presented in @eqtotalloss including different compound loss functions as well as modifying the global and local weights. We focus our analysis of the weight impact on the global and local $cal(L)_"DiceCE"$ combination and train segmentation models on global-only DiceCE $(hat(alpha)=1, hat(beta)=0)$, region-wise only $cal(L)_"DiceCE"$ $(hat(alpha)=0, hat(beta)=1)$ as well as equalized and scaled weights.
+
+We consider standard $cal(L)_"DiceCE"$ operating globally on the image as a baseline. We further analyze the effect of all presented weight maps on this baseline loss.
+
+To improve readability, the formula $cal(L)_"total" = hat(alpha) * cal(L)_"global" + hat(beta) * cal(L)_"Voronoi"$ is simplified to a tuple with the baseline being represented as (DiceCE, none).

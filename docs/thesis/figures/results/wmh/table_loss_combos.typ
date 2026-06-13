@@ -26,7 +26,7 @@
   [0.451],
   [#delta(-0.043)],
   [#delta(-0.012)],
-  [#text(size: 10.5pt)[*#delta(+0.032)*]],
+  [#text(size: 9.5pt)[*#delta(+0.032)*]],
   [#delta(-0.018)],
   [#delta(-0.013)],
   [#delta(-0.018)],
@@ -36,14 +36,14 @@
   [0.365],
   [#delta(-0.084)],
   [#delta(-0.029)],
-  [#text(size: 10.5pt)[*#delta(+0.003)*]],
+  [#text(size: 9.5pt)[*#delta(+0.003)*]],
   [#delta(-0.026)],
   [#delta(-0.018)],
   [#delta(-0.022)],
 
   // test/global/precision
   [precision],
-  [#text(size: 10.5pt)[*0.877*]],
+  [#text(size: 9.5pt)[*0.877*]],
   [#delta(-0.030)],
   [#delta(-0.033)],
   [#delta(-0.007)],
@@ -56,7 +56,7 @@
   [0.318],
   [#delta(-0.078)],
   [#delta(-0.026)],
-  [#text(size: 10.5pt)[*#delta(+0.003)*]],
+  [#text(size: 9.5pt)[*#delta(+0.003)*]],
   [#delta(-0.024)],
   [#delta(-0.016)],
   [#delta(-0.019)],
@@ -66,7 +66,7 @@
   [0.427],
   [#delta(+0.071)],
   [#delta(+0.026)],
-  [#text(size: 10.5pt)[*#delta(+0.086)*]],
+  [#text(size: 9.5pt)[*#delta(+0.086)*]],
   [#delta(+0.052)],
   [#delta(+0.073)],
   [#delta(+0.072)],
@@ -74,7 +74,7 @@
   // test/instance/dice
   [SQDSC],
   [0.429],
-  [#text(size: 10.5pt)[*#delta(+0.077)*]],
+  [#text(size: 9.5pt)[*#delta(+0.077)*]],
   [#delta(+0.018)],
   [#delta(+0.067)],
   [#delta(+0.017)],
@@ -82,18 +82,18 @@
   [#delta(+0.032)],
 
   // test/instance/assd
-  [SQASSD],
+  [SQASSD$arrow.b$],
   [1.173],
   [#deltainv(+0.006)],
   [#deltainv(-0.090)],
   [#deltainv(-0.264)],
   [#deltainv(-0.216)],
-  [#text(size: 10.5pt)[*#deltainv(-0.304)*]],
+  [#text(size: 9.5pt)[*#deltainv(-0.304)*]],
   [#deltainv(-0.246)],
 
   // test/instance/precision
   [$"precision"_"inst"$],
-  [#text(size: 10.5pt)[*0.899*]],
+  [#text(size: 9.5pt)[*0.899*]],
   [#delta(-0.077)],
   [#delta(-0.063)],
   [#delta(-0.045)],
@@ -109,7 +109,7 @@
   [#delta(+0.097)],
   [#delta(+0.071)],
   [#delta(+0.095)],
-  [#text(size: 10.5pt)[*#delta(+0.113)*]],
+  [#text(size: 9.5pt)[*#delta(+0.113)*]],
 
   // test/cc/dice
   [CCDice],
@@ -119,5 +119,5 @@
   [#delta(+0.070)],
   [#delta(+0.045)],
   [#delta(+0.071)],
-  [#text(size: 10.5pt)[*#delta(+0.080)*]],
+  [#text(size: 9.5pt)[*#delta(+0.080)*]],
 )
