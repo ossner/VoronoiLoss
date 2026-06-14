@@ -2,8 +2,9 @@
 
 #import "utils.typ": draft, inwriting, todo
 #import "glossary.typ": entry-list
-#import "@preview/glossarium:0.5.9": *
+#import "@preview/glossy:0.9.1": *
 
+#show: init-glossary.with(entry-list)
 /** Introduction
 
   The philosophy of this template is that the template file itself only contains the template of the first pages of the thesis, that are the same for all thesis.
@@ -38,7 +39,7 @@
   program: "Informatics",
   school: "School of Computation, Information and Technology",
   examiner: "Prof. Dr. Daniel Rückert",
-  supervisors: ("Hendrik Möller",),
+  supervisors: ("M.Sc. Hendrik Möller",),
   author: "Sebastian Oßner",
   title-en: "Addressing Volumetric Bias in Multi-Instance Semantic Segmentation Using Voronoi Tessellation",
   title-de: "Adressierung volumetrischer Befangenheit in Multi-Instanz-Semantischer Segmentierung durch Voronoi-Tessellation",
@@ -102,9 +103,6 @@
 }
 
 // Make and register Glossary //
-#show: make-glossary
-#register-glossary(entry-list)
-
 // ------ Content ------
 
 // Table of contents.
@@ -156,10 +154,51 @@
 
 // List of Acronyms.  
 #context text(size: 10pt)[
-#heading(numbering: none)[Glossary]
 
-#print-glossary(
-  entry-list,
+#glossary(
+  theme: (
+  // Main glossary section
+  section: (title, body) => {
+    heading(numbering: none, level: 1, title)
+    body
+  },
+
+  // Group of related terms
+  group: (name, index, total, body) => {
+    if name != "" and total > 1 {
+      heading(numbering: none, level: 2, name)
+    }
+    body
+  },
+
+  // Individual glossary entry
+  entry: (entry, index, total) => {
+    block(
+      grid(
+        columns: (0.3fr, 2fr,1fr),
+        align: (left, left, right),
+        column-gutter: 1em,
+
+        // short
+        entry.short,
+
+        // long (optional)
+        if entry.long != none {
+          entry.long
+        } else {
+          []
+        },
+
+        // references/pages
+        entry.pages.join(", "),
+      )
+    )
+  }
+)
+,
+  sort: false,
+  ignore-case: false,
+  show-all: false,
 )
 
 // List of figures.
@@ -175,7 +214,6 @@
   title: none,
   target: figure.where(kind: table),
 )
-
 // --- Bibliography ---
 
 #set par(leading: 0.7em, first-line-indent: 0em, justify: true)

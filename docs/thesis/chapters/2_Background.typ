@@ -1,8 +1,8 @@
 #import "../utils.typ": class_colors, todo
 
 = Background <chapter_background>
-This section introduces the background knowledge required to understand and evaluate the concepts and themes explored in this thesis.
-@semanticsegmentation introduces the topic of semantic segmentation as well as general principles of deep learning. @sec_connectedcomponents formalizes the concept of connected components in the domain and how they give rise to the problem space introduced in @multi-instance-semantic-segmentation. @voronoi_tessellation gives an overview of distance-based Voronoi regions that we will use to address a problem often encountered in biomedical imaging described more closely in @instance_imbalance.
+This section introduces the knowledge required to understand and evaluate the concepts and themes explored in this thesis.
+@semanticsegmentation introduces the topic of semantic segmentation as well as general principles of deep learning. @sec_connectedcomponents formalizes the concept of connected components in the domain and how they give rise to the instance imbalance problem introduced in @multi-instance-semantic-segmentation. @voronoi_tessellation gives an overview of distance-based Voronoi regions that we will use to address a problem often encountered in biomedical imaging described more closely in @instance_imbalance.
 
 == Semantic Segmentation <semanticsegmentation>
 Semantic segmentation is a subset of machine learning problems in which a neural network is trained to assign a class label to every pixel in an image. This is a long-standing and important problem in many domains, such as medical imaging and autonomous driving, among others and much research has been devoted to improving the detection and delineation of objects in images. This section will cover the basics, especially with respect to binary segmentation.
@@ -59,13 +59,12 @@ This signal can be calculated through the accumulation of each pixel into one of
 
 === Loss Functions<sec_lossfunctionsbg>
 
-Typically, the number of pixels in each category is used in a formula that describes how well the classifier can predict the label map. This is called the loss function of a neural network. A starting definition for a loss function is a function $cal(L)$ that takes as arguments the ground truth label $Y$ and the predicted binary segmentation $hat(Y)$. From this, it calculates a scalar value quantifying prediction quality. A common choice for this loss function is based on the overlap-based @dsc:
+Typically, the number of pixels in each category is used in a formula that describes how well the classifier can predict the label map. This is called the loss function of a neural network. A starting definition for a loss function is a function $cal(L)$ that takes as arguments the ground truth label $Y$ and the predicted binary segmentation $hat(Y)$. From this, it calculates a scalar value quantifying prediction quality. A common choice for this loss function is based on the @dsc, a popular segmentation metric that quantifies the overlap of the prediction and label and returns a value from 0 to 1:
 
 $
   "DSC"=frac(2 times "TP", 2times"TP"+"FP"+"FN")
 $<eqDSC>
 
-This is a popular segmentation metric that quantifies the overlap of the prediction and label and returns a value from 0 to 1.
 The closer the value of @dsc is to $1$, the better the segmentation result is said to be. Therefore, minimizing $cal(L)_"DSC"=1-"DSC"$ would be a simple training objective for a segmentation network.
 
 However, $cal(L)_"DSC"$ (also known as the hard dice) is not differentiable, as it operates on the binary prediction map obtained through a thresholding step. In soft dice $cal(L)_"Dice"$, the loss does not operate directly on $hat(Y)$, but rather on the sigmoid confidence probabilities $tilde(Y)$. Each element in $tilde(Y)$ describes the continuous probability in $[0,1]$ that the pixel in question belongs to the foreground class:
@@ -94,7 +93,7 @@ $<eqdicece>
 
 This hybrid formula leverages the strengths of both metrics, serving as a robust and flexible learning signal for modern segmentation networks.
 
-Another common loss function — particularly in medical image segmentation — is $cal(L)_"Tversky"$ which introduces hyperparameters $alpha_"T", beta_"T"$ that serve to control the punishment of pixels classified as @fp and @fn respectively.
+Another common loss function — particularly in medical image segmentation — is $cal(L)_"Tversky"$ which introduces hyperparameters $alpha_"T", beta_"T"$ that serve to control the punishment of pixels classified as @fp:short and @fn:short respectively.
 
 $
   cal(L)_"Tversky" (Y,tilde(Y), alpha_"T", beta_"T")=
@@ -154,7 +153,7 @@ Using this formulation, it becomes apparent that a partition is formed such that
 == Multi-Instance Semantic Segmentation <multi-instance-semantic-segmentation>
 This section combines the topics introduced previously into the domain of multi-instance semantic segmentation. This is a special subset of problems in semantic segmentation in which the number of connected component foreground instances $K$ is especially large. While there exists no formal definition of the number of instances required to classify a given segmentation problem as multi-instance, there are many cases in which this delineation makes sense.
 
-It is important to differentiate between multi-instance semantic segmentation and instance segmentation. Though they carry similar names, they are fundamentally different topics in machine learning. @figinstancevssemantic shows the difference between these two approaches: Instance segmentation aims to train networks to differentiate between thematically separate objects in an image though they might be connected in the sense described in @sec_connectedcomponents. To achieve this, the thematically separated objects are distinguished during the labeling process by assigning individual labels to each instance. This is fundamentally incompatible with binary segmentation, as follows from @eq_label.
+It is important to differentiate between multi-instance semantic segmentation and instance segmentation. Though they carry similar names, they are fundamentally different topics in machine learning. @figinstancevssemantic shows the difference between these two approaches: Instance segmentation aims to train networks to differentiate between thematically separate objects in an image though they might be connected in the sense described in @sec_connectedcomponents. To achieve this, the thematically distinct objects are distinguished during the labeling process by assigning individual labels to each instance. This is fundamentally incompatible with binary segmentation, as follows from @eq_label.
 
 #figure(
   grid(
@@ -206,7 +205,7 @@ These distances can be efficiently computed using the @edt algorithm. @figvorono
 ) <figvoronoi>
 
 == The Instance Imbalance Problem <instance_imbalance>
-The eponymous multiple instances in multi-instance segmentation stem from the specific problem domain wherein images contain many of these spatially separate components. Biomedical imaging is a domain which contains many such problem settings. Anatomies or pathologies can manifest as many spatially separate instances of the same class. Examples of these include many types of cancers such as liver tumors or brain metastases, but also anatomical features such as cells or their organelles. Specific examples of such applications are discussed in @sec_datasets.
+The eponymous multiple instances in multi-instance segmentation stem from the specific problem domain wherein images contain many of these spatially separate components. Biomedical imaging is a domain which contains many such problem settings. Anatomies or pathologies can manifest as many spatially separate instances of the same class. Examples of these include many types of cancers such as liver tumors or brain metastases, but also anatomical features such as cells or their organelles. Specific examples of such applications are shown in @sec_datasets.
 
 These cases often contain instances of diverse shapes, sizes, and numbers. Since the data implicitly steers the behaviour of the neural network through the loss function, a phenomenon occurs in which loss functions implicitly prioritize larger instances to improve the segmentation loss signal @kofler2023blobloss @jaus2025every.
 

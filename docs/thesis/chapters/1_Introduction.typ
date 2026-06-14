@@ -10,8 +10,6 @@ These networks learn to identify diverse patterns between an image and an expert
 
 Due to the complex optimization dynamics of the neural network learning process, however, unintended inductive biases can be seen in model behaviour. One such bias is the established prioritization that state-of-the-art segmentation algorithms show towards larger individual objects, which can lead to systematic underperformance on the identification of smaller objects @kofler2023blobloss @jaus2025every @rachmadi2024family @rachmadi2024iciloss.
 
-This is a crucial issue in medical image segmentation where smaller tumors can carry the same clinical relevance as larger ones and are critical clues that point clinicians toward early-stage cancer development or new metastases. This issue of a biased performance has attracted several recent studies on possible improvements of segmentation networks.
+This is a crucial issue in medical image segmentation where smaller tumors can carry the same clinical relevance as larger ones and are critical clues that point clinicians toward early-stage cancer development or new metastases. The issue of a volumetrically biased performance has attracted several recent studies on possible improvements of segmentation networks.
 
 This thesis presents an investigation of several methods based on Voronoi tessellation to address the issue of size-based biases in the learning process of segmentation networks. In particular, we examine the effect of region-wise loss functions similar to the paradigm proposed by Bouteille et al. @bouteille2026learning as well as several region-based weight maps as efficient ways to introduce a manual bias into the network in order to steer learning behaviour.
-
-We evaluate our hypotheses across various datasets spanning dimensionality as well as imaging modality and biological scale.

@@ -1,5 +1,5 @@
-#let inwriting = true
-#let draft = true
+#let inwriting = false
+#let draft = false
 
 #assert(not(inwriting and not(draft)), message: "If inwriting is true, draft should be true as well.")
 

@@ -1,177 +1,120 @@
 #let entry-list = (
-  (
-    key: "em",
-    short: "EM",
-    long: "Electron Microscopy",
-    group: "Abbreviations",
-  ),
-  (
-    key: "ai",
+  ai: (
     short: "AI",
     long: "Artificial Intelligence",
     group: "Abbreviations",
   ),
-  (
-    key: "pfd",
-    short: "PFD",
-    long: "Platelet Function Disorder",
-    group: "Abbreviations",
-  ),
-  (
-    key: "tp",
-    short: "TP",
-    long: "true positive",
-    group: "Metrics",
-  ),
-  (
-    key: "fp",
-    short: "FP",
-    long: "false positive",
-    group: "Metrics",
-  ),
-  (
-    key: "fn",
-    short: "FN",
-    long: "false negative",
-    group: "Metrics",
-  ),
-  (
-    key: "tn",
-    short: "TN",
-    long: "true negative",
-    group: "Metrics",
-  ),
-  (
-    key: "mri",
-    short: "MRI",
-    long: "Magnetic Resonance Imaging",
-    group: "Abbreviations",
-  ),
-  (
-    key: "flair",
-    short: "FLAIR",
-    long: "Fluid-Attenuated Inversion Recovery",
-    group: "Abbreviations",
-  ),
-  (
-    key: "ce",
-    short: "CE",
-    long: "Cross Entropy",
-    group: "Metrics",
-  ),
-  (
-    key: "dsc",
-    short: "DSC",
-    long: "Dice Metric",
-    group: "Metrics",
-  ),
-  (
-    key: "cnn",
-    short: "CNN",
-    long: "Convolutional Neural Network",
-    group: "Abbreviations",
-  ),
-  (
-    key: "edt",
+  edt: (
     short: "EDT",
     long: "Euclidean Distance Transform",
     group: "Abbreviations",
   ),
-  (
-    key: "iw",
+  iw: (
     short: "iw",
     long: "inverse weighting",
     group: "Abbreviations",
   ),
-  (
-    key: "sqassd",
-    short: "SQASSD",
-    long: "Segmentation Quality Average Symmetric Surface Distance",
+  mri: (
+    short: "MRI",
+    long: "Magnetic Resonance Imaging",
+    group: "Abbreviations",
+  ),
+  em: (
+    short: "EM",
+    long: "Electron Microscopy",
+    group: "Abbreviations",
+  ),
+  flair: (
+    short: "FLAIR",
+    long: "Fluid-Attenuated Inversion Recovery",
+    group: "Abbreviations",
+  ),
+  pfd: (
+    short: "PFD",
+    long: "Platelet Function Disorder",
+    group: "Abbreviations",
+  ),
+  tp: (
+    short: "TP",
+    long: "True Positive",
     group: "Metrics",
   ),
-  (
-    key: "rq",
+  fp: (
+    short: "FP",
+    long: "False Positive",
+    group: "Metrics",
+  ),
+  fn: (
+    short: "FN",
+    long: "False Negative",
+    group: "Metrics",
+  ),
+  tn: (
+    short: "TN",
+    long: "True Negative",
+    group: "Metrics",
+  ),
+  dsc: (
+    short: "DSC",
+    long: "Dice Similarity Coefficient",
+    group: "Metrics",
+  ),
+  bce: (
+    short: "BCE",
+    long: "Binary Cross Entropy",
+    group: "Metrics",
+  ),
+  sq: (
+    short: "SQ",
+    long: "Segmentation Quality",
+    group: "Metrics",
+  ),
+  rq: (
     short: "RQ",
     long: "Recognition Quality",
     group: "Metrics",
   ),
-  (
-    key: "sq",
-    short: "SQ",
-    long: "Segmentation Quality",
-    description: [],
+  sqassd: (
+    short: "SQASSD",
+    long: "Segmentation Quality Average Symmetric Surface Distance",
     group: "Metrics",
   ),
-  (
-    key: "pq",
+  pq: (
     short: "PQ",
     long: "Panoptic Quality",
-    description: [],
     group: "Metrics",
   ),
-  (
-    key: "bce",
-    short: "BCE",
-    long: "binary cross entropy",
-    description: [],
-    group: "Metrics",
-  ),
-  (
-    key: "sqdsc",
+  sqdsc: (
     short: "SQDSC",
     long: "Segmentation Quality Dice Similarity Coefficient",
-    description: [],
     group: "Metrics",
   ),
-  (
-    key: "mets",
+  mets: (
     short: "METS",
     long: "brain metastases",
-    description: [],
     group: "Datasets",
   ),
-  (
-    key: "wmh",
+  wmh: (
     short: "WMH",
     long: "white matter hyperintensities",
     plural: true,
-    description: [],
     group: "Datasets",
   ),
-  (
-    key: "cv",
+  cv: (
     short: "CV",
     long: "canalicular vessels",
     plural: true,
-    description: [],
     group: "Datasets",
   ),
-  (
-    key: "mit",
+  ag: (
+    short: "AG",
+    long: "alpha granules",
+    group: "Datasets",
+  ),
+  mit: (
     short: "MIT",
     long: "mitochondria",
     plural: true,
-    description: [],
     group: "Datasets",
-  ),
-  (
-    key: "ag",
-    short: "AG",
-    long: "alpha granules",
-    description: [],
-    group: "Datasets",
-  ),
-  (
-    key: "cedi",
-    short: "CEDI",
-    long: "Center Distance",
-    description: [An instance-wise metric that denotes the distance of the prediction centroid to the ground truth centroid. Lower is considered better.],
-    group: "Metrics",
-  ),
-  (
-    key: "fbeta",
-    short: [$F_beta$],
-    long: [$F_beta$-Score],
-    group: "Metrics",
   ),
 )

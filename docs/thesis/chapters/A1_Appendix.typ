@@ -18,9 +18,11 @@
 
 #heading(numbering: "A -")[Supplementary Materials] <Appendix_A>
 
-This appendix provides additional results, tables and charts for deeper examination. All metrics, datasets and abbreviations introduced in the main text are used without modification.
+This appendix provides additional results, tables and charts for deeper examination. All metrics, datasets and abbreviations introduced in the main text are used without modification. The same colors from the thesis are applied consistently for easy visual differentiation of datasets: #text(weight: "bold", fill: datasetcolors.at(0))[METS], #text(weight: "bold", fill: datasetcolors.at(1))[WMH],  #text(weight: "bold", fill: datasetcolors.at(2))[CV], #text(weight: "bold", fill: datasetcolors.at(3))[AG], #text(weight: "bold", fill: datasetcolors.at(4))[MIT].
 
 #heading(depth: 2, numbering: "A.1 -")[Loss Combinations]
+
+The following section expands upon results presented in @sec_losscombos_results with additional metrics such as pixel-wise precision, recall and $F_2$. 
 
 #figure(
   importantresults-table_loss_combos_quartiles_3D(),
@@ -65,7 +67,6 @@ This appendix provides additional results, tables and charts for deeper examinat
 )<tabmitlosscombos>
 
 #heading(depth: 2, numbering: "A.1 -")[Weight Maps]
-
 
 #figure(
   importantresults-table_weight_maps_quartiles_3D(),

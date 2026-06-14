@@ -6,7 +6,7 @@ This chapter covers prior research on the topic of multi-instance semantic segme
 == A Taxonomy of Losses <sec_loss_taxonomy>
 A general overview of the current losses used in biomedical image segmentation is proposed in @ma2021lossodyssey. The researchers compiled the most common segmentation loss functions into four distinct categories, which will later be extended by a fifth category:
 
-1. Distribution-based losses such as @ce
+1. Distribution-based losses such as @bce
 2. Overlap/Region-based losses such as Dice or Tversky
 3. Compound losses commonly combine distribution- and overlap-based loss functions, for example DiceCE and DiceFocal
 4. Boundary-based losses constitute a relatively recent class of loss functions that aims to minimize the distance between ground truth and predicted segmentation
