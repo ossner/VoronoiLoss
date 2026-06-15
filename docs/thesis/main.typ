@@ -3,8 +3,6 @@
 #import "utils.typ": draft, inwriting, todo
 #import "glossary.typ": entry-list
 #import "@preview/glossy:0.9.1": *
-
-#show: init-glossary.with(entry-list)
 /** Introduction
 
   The philosophy of this template is that the template file itself only contains the template of the first pages of the thesis, that are the same for all thesis.
@@ -83,7 +81,7 @@
   if (it.has("depth")) {
     if it.depth == 1 [Chapter] else if it.depth == 2 [Section] else [Subsection]
   } else {
-     [Appendix]
+    [Appendix]
   }
 })
 
@@ -103,6 +101,10 @@
 }
 
 // Make and register Glossary //
+#show: init-glossary.with(entry-list, term-links: true, show-term: term => text(
+  fill: rgb("#238a5c"),
+  term,
+))
 // ------ Content ------
 
 // Table of contents.
@@ -146,76 +148,73 @@
 
 // Redefine supplement + numbering for appendix
 #show figure: set figure(
-  numbering: n => "A." + str(n)
+  numbering: n => "A." + str(n),
 )
 
 #show figure.caption: set text(size: 10pt)
 #include "chapters/A1_Appendix.typ"
 
-// List of Acronyms.  
+// List of Acronyms.
 #context text(size: 10pt)[
 
-#glossary(
-  theme: (
-  // Main glossary section
-  section: (title, body) => {
-    heading(numbering: none, level: 1, title)
-    body
-  },
+  #glossary(
+    theme: (
+      // Main glossary section
+      section: (title, body) => {
+        heading(numbering: none, level: 1, title)
+        body
+      },
+      // Group of related terms
+      group: (name, index, total, body) => {
+        if name != "" and total > 1 {
+          heading(numbering: none, level: 2, name)
+        }
+        body
+      },
+      // Individual glossary entry
+      entry: (entry, index, total) => {
+        block(
+          grid(
+            columns: (0.3fr, 2fr, 1fr),
+            align: (left, left, right),
+            column-gutter: 1em,
 
-  // Group of related terms
-  group: (name, index, total, body) => {
-    if name != "" and total > 1 {
-      heading(numbering: none, level: 2, name)
-    }
-    body
-  },
+            // short + glossary anchor
+            [#entry.short #entry.label],
 
-  // Individual glossary entry
-  entry: (entry, index, total) => {
-    block(
-      grid(
-        columns: (0.3fr, 2fr,1fr),
-        align: (left, left, right),
-        column-gutter: 1em,
+            // long (optional)
+            if entry.long != none {
+              entry.long
+            } else {
+              []
+            },
 
-        // short
-        entry.short,
+            // references/pages
+            entry.pages.join(", "),
+          ),
+        )
+      },
+    ),
+    sort: false,
+    ignore-case: false,
+    show-all: false,
+  )
 
-        // long (optional)
-        if entry.long != none {
-          entry.long
-        } else {
-          []
-        },
+  // List of figures.
+  #heading(numbering: none)[List of Figures]
+  #outline(
+    title: none,
+    target: figure.where(kind: image),
+  )
 
-        // references/pages
-        entry.pages.join(", "),
-      )
-    )
-  }
-)
-,
-  sort: false,
-  ignore-case: false,
-  show-all: false,
-)
+  // List of tables.
+  #heading(numbering: none)[List of Tables]
+  #outline(
+    title: none,
+    target: figure.where(kind: table),
+  )
+  // --- Bibliography ---
 
-// List of figures.
-#heading(numbering: none)[List of Figures]
-#outline(
-  title: none,
-  target: figure.where(kind: image),
-)
-
-// List of tables.
-#heading(numbering: none)[List of Tables]
-#outline(
-  title: none,
-  target: figure.where(kind: table),
-)
-// --- Bibliography ---
-
-#set par(leading: 0.7em, first-line-indent: 0em, justify: true)
-#bibliography("items.bib", style: "citestyle.csl")
+  #set par(leading: 0.7em, first-line-indent: 0em, justify: true)
+  #bibliography("items.bib", style: "citestyle.csl")
 ]
