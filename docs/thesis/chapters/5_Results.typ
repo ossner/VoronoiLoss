@@ -8,12 +8,12 @@ In this section we present the effects of the Voronoi-based tessellation approac
 
 In @sec_losscombos_results we show the results of different global- and region-wise loss combinations using several different compound losses.
 
-@sec_weightmaps_results shows further evaluations using precomputed weight maps on applied the baseline loss of global DiceCE.
+@sec_weightmaps_results shows evaluations of the effect precomputed weight maps have when applied to the baseline loss of global DiceCE.
 
 While we present relevant test results across all datasets and experiments, exhaustive tables of our results with several additional metrics evaluated across all datasets are given in the supplementary material @Appendix_A.
 
 == Loss Combinations <sec_losscombos_results>
-Introducing a Voronoi-based loss function component improves many metrics across all datasets in both 2D and 3D as shown in @taballlosscombos. Apart from @rq in the mitochondria dataset, the best models in each datasets and metric combination utilize some form of region-wise loss. Additionally, global metrics such as @dsc as well as instance-wise (e.g. @sqassd) and the region-wise CCDice show improvements across all datasets.
+Introducing a Voronoi-based loss function component improves many metrics across all datasets in both 2D and 3D as shown in @taballlosscombos. Apart from @rq in the mitochondria dataset, the best models in each dataset and metric combination utilize some form of region-wise loss. Additionally, global metrics such as @dsc as well as instance-wise (e.g. @sqassd) and the region-wise CCDice show improvements across all datasets.
 
 #figure(
   importantresults-table_loss_combos(),
@@ -64,7 +64,7 @@ In addition to the volume-wise instance recall improvements, we present a simila
   ],
 ) <figmetsresultslollipopsqdsc>
 
-@figsbmgloballocal depicts a qualitative evaluation sample from both the (DiceCE, none) and (none, DiceCE) combinations showing the difference in segmentations when a model is trained globally versus strictly region-wise. The label contains 13 metastases with the global DiceCE identifying 6 as true positive instances and no $"FP"_"inst"$. The Voronoi-region-wise DiceCE found 11 label instances, predicting 5 false instances.
+@figsbmgloballocal depicts a qualitative evaluation sample from both the (DiceCE, none) and (none, DiceCE) combinations showing the difference in segmentation outputs when a model is trained globally versus strictly region-wise. The label contains 13 metastases with the global DiceCE identifying 6 as true positive instances and no $"FP"_"inst"$. The Voronoi-region-wise DiceCE found 11 label instances, predicting 5 false instances.
 
 #figure(
   grid(
@@ -77,7 +77,7 @@ In addition to the volume-wise instance recall improvements, we present a simila
   ],
 ) <figsbmgloballocal>
 
-Given the high-stakes domain of brain cancer metastases, predicting no cancer lesions at all can be seen as a fatal flaw in any model; it is therefore also important to examine the number of cases where a model evaluated a patient as cancer-free (i.e. the set of all connected components on the prediction $hat(Y)$ is empty, that is: $hat(I) = emptyset$). These cases do not exist in the dataset, with each scanned patient exhibiting at least 1 metastasized tumor. Of all tested combinations, only the baseline of the purely global DiceCE failed to predict any cancerous lesions in 2 patients.
+Given the high-stakes domain of brain cancer metastases, predicting no cancer lesions at all can be seen as a fatal flaw in any model; it is therefore also important to examine the number of cases where a model evaluated a patient as cancer-free (i.e. the set of all connected components on the prediction $hat(Y)$ is empty, that is: $hat(I) = emptyset$). Such cases do not occur in the dataset, as every scanned patient exhibits at least 1 metastasized tumor. Of all tested combinations, only the baseline of the purely global DiceCE failed to predict any cancerous lesions in 2 patients.
 
 The @wmh:long (@wmh) dataset is the second 3D dataset under evaluation. As with @mets, @taballlosscombos shows that key metrics in all categories of global, instance-wise and region-wise are improved when training with the Voronoi loss paradigm. @dsc however, only showed improvements over the baseline when the global loss component received double the weight of the region-wise component, increasing from 0.451 to 0.488.
 
@@ -127,7 +127,7 @@ Over all datasets, weight maps were selectively able to improve several segmenta
   caption: [Results for all datasets across various metrics when trained with different weight maps. Baseline values are computed on global-only DiceCE without a weight map, all other maps were applied to the same loss. Improvements are shown as relative deltas to the baseline in green, metrics that have worsened are shown in red, $arrow.b$ indicates a lower metric value is an improvement. The best value in each metric is emphasized in bold. Result rows are grouped by their dataset.],
 )<taballweightmaps>
 
-The @wmh dataset was improved in almost all metrics when $W_"v_mountains"$, a map in which weights are highest in instance pixels and exponentially decay with distance from its border, was applied during training. $W_"v_mountains"$ improved instance recall over the baseline $(0.315 arrow 0.676)$, @sqassd was also improved greatly, reducing the distance of surfaces by 0.665 voxels from the 1.173 baseline. CCDice results were also more than doubled ($0.180 -> 0.366$).
+The @wmh dataset was improved in almost all metrics when $W_"v_mountains"$, a map in which weights are highest in instance pixels and exponentially decay with distance from its border, was applied during training. $W_"v_mountains"$ improved instance recall over the baseline $(0.315 arrow 0.676)$, @sqassd was also improved, reducing the distance of surfaces by 0.665 voxels from the 1.173 baseline. CCDice results were also more than doubled ($0.180 -> 0.366$).
 
 @figwmhquartileresultsweightmaps depicts the results of @wmh instance recall and @sqdsc per volume quartile across all weight maps. $W_"v_iw"$ greatly increases instance recall across all quartiles, improving the detection of the smallest instances in Q1 from 10% to 50%. The inverse weighted map did not, however, significantly increase segmentation quality of the identified instances, remaining relatively consistent with the baseline in all quartiles. $W_"v_mountains"$ had a similar effect on the recall of instances without compromising @sqdsc for any quartile. Additionally, $W_"v_region"$, the map that assigns the same share of the total weight to all Voronoi regions, consistently increased both instance recall as well as @sqdsc, but to a lesser extent.
 

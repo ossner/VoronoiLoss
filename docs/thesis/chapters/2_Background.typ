@@ -131,11 +131,11 @@ Weight maps allow for targeted spatial biases to be manually or algorithmically 
 The connected components algorithm is a procedure in computer vision which provides a way to differentiate between subsets of a space. These subsets, in the context of binary segmentation, are instances determined by the previously described binary label map and a connectivity parameter. In the application of pixelated images, interconnectedness of components is determined by the neighborhood $cal(N)$ of a pixel or voxel $p in [N]$.
 
 Formally, the labels can be decomposed into $I$: the set of $K$ spatially separate components $I:{I_1, I_2, dots, I_K}$ (also called instances). Each instance $I_k in I$ contains a set of pixels (in 2D) or voxels (in 3D) such that $I_k = {p_1, p_2, dots}$ and:
-1. For every pair of points $p,q in I_i$, there exists a sequence of points $(v_1, v_2, dots, v_f)$ such that $v_1=p$, $v_f=q "and" 1 lt.eq m lt f, v_m in I_i$ and $v_(m+1) in cal(N)(v_m)$. This ensures that between two pixels of the same instance, there exists a path that travels strictly within that same instance.
-2. For any point $p in I_i$ and any point $q in.not I_i$ if $Y(q)=1$, then $q in.not cal(N)(p)$. Therefore $I_i$ is the largest possible set of connected foreground pixels.
-3. For all $i, j in [K], i eq.not j: I_i inter I_j eq emptyset$, meaning instances are disjointed and each foreground pixel belongs to exactly one instance.
+1. For every pair of points $p,q in I_k$, there exists a sequence of points $(v_1, v_2, dots, v_f)$ such that $v_1=p$, $v_f=q "and" 1 lt.eq m lt f, v_m in I_k$ and $v_(m+1) in cal(N)(v_m)$. This ensures that between two pixels of the same instance, there exists a path that travels strictly within that same instance.
+2. For any point $p in I_k$ and any point $q in.not I_k$ if $Y(q)=1$, then $q in.not cal(N)(p)$. There is no foreground pixel outside $I_k$ that is a neighbor of any pixel inside $I_k$.
+3. For all $k, j in [K], k eq.not j: I_k inter I_j eq emptyset$, meaning instances are disjointed and each foreground pixel belongs to exactly one instance.
 
-The neighborhood $cal(N)(p)$ is defined by the connectivity parameter $k$. This typically refers to the number of adjacent elements considered. @figneighborhood shows a visual overview of several common neighborhood concepts. Different connectivity parameters need to be chosen based on the dimension of the space (2D vs. 3D).
+The neighborhood $cal(N)(p)$ is defined by the connectivity parameter $c$. This typically refers to the number of adjacent elements considered. @figneighborhood shows a visual overview of several common neighborhood concepts. Different connectivity parameters need to be chosen based on the dimension of the space (2D vs. 3D).
 
 Using this formulation, it becomes apparent that a partition is formed such that all instances comprise the set of foreground pixels.
 
@@ -186,7 +186,7 @@ $
   "d"(x, I_k) = min_(p in I_k)"d"(x,p)
 $
 
-The Voronoi region $R_k subset {1, dots, N}$ associated with the seed instance $I_k$ is then a subset of the image:
+The Voronoi region $R_k subset.eq [N]$ associated with the seed instance $I_k$ is then a subset of the image:
 $
   R_k = {x in [N] | "d"(x, I_k) lt.eq "d"(x,I_j) forall j in [K], j eq.not k}
 $

@@ -11,15 +11,15 @@ A general overview of the current losses used in biomedical image segmentation i
 3. Compound losses commonly combine distribution- and overlap-based loss functions, for example DiceCE and DiceFocal
 4. Boundary-based losses constitute a relatively recent class of loss functions that aims to minimize the distance between ground truth and predicted segmentation
 
-This provides a solid foundation of the different approaches that have been made to address specific segmentation problems as well as an evaluation across multiple popular segmentation datasets, showing that a compound of Dice loss and a variation of cross-entropy generally provides the highest evaluation scores. This finding is consistent with the frequent use of DiceCE in medical image segmentation @liu2024we @zhang2021lesloss. Liu et al. propose that this is due to a deep implicit connection between the two losses @liu2024we.
+This provides a solid foundation for the different approaches that have been made to address specific segmentation problems as well as an evaluation across multiple popular segmentation datasets, showing that a compound of Dice loss and a variation of cross-entropy generally provides the highest evaluation scores. This finding is consistent with the frequent use of DiceCE in medical image segmentation @liu2024we @zhang2021lesloss. Liu et al. propose that this is due to a deep implicit connection between the two losses @liu2024we.
 
 == Instance-wise Losses <sec_instance_losses>
 Multiple earlier works have shown that the use of connected component analysis to identify separate instances can be successfully incorporated into loss functions. Kofler et al. @kofler2023blobloss published a work wherein instances are treated as individual, equally weighted components of the loss formulation.
 
-Using the notation of $K$ instances $I={I_1, I_2, dots I_K}$ identified using the connected component analysis described in @sec_connectedcomponents the loss function $cal(L)_"blob"$ can be formulated as
+Using the notation of $K$ instances $I={I_1, I_2, dots I_K}$ identified via the connected component analysis described in @sec_connectedcomponents, the loss function $cal(L)_"blob"$ can be formulated as
 
 $
-  cal(L)_"blob" (Y, hat(Y)) = frac(1,K) sum_(k=1)^K cal(L)((y_i)_(i in I_k),(hat(y)_i)_(i in I_k) )
+  cal(L)_"blob" (Y, tilde(Y), I) = frac(1,K) sum_(k=1)^K cal(L)((y_n)_(n in I_k),(tilde(y)_n)_(n in I_k) )
 $<eq_blobloss>
 
 This means that the loss value for each individual instance is calculated by only considering the pixels in that instance and averaging those loss values over all $K$ instances. This therefore describes not a specific loss function, but a general framework that can be applied to any loss function (the authors evaluate both Dice and Tversky loss as the function $cal(L)$ used in @eq_blobloss).
@@ -30,7 +30,7 @@ $
 $<eq_globallocal>
 The ideal weights are explored experimentally and the researchers found that $(alpha=2, beta=1)$ provides the best results, meaning an increased impact of the global component leads to improved segmentation performance.
 
-Zhang et al @zhang2021lesloss further expand the instance-wise loss space by transforming ground-truth lesions into uniform spheres, meaning every instance, no matter its size, is represented in a separate target mask as a sphere around the instance centroid. This is shown to improve segmentation on multiple sclerosis datasets.
+Zhang et al. @zhang2021lesloss further expand the instance-wise loss space by transforming ground-truth lesions into uniform spheres, meaning every instance, no matter its size, is represented in a separate target mask as a sphere around the instance centroid. This is shown to improve segmentation on multiple sclerosis datasets.
 
 This notion of global and local components is mirrored in other instance-aware loss research such as @rachmadi2024iciloss and @rachmadi2024family which propose multiple novel loss functions based on connected components. In addition to connected components identification on the binary labels $Y$, these works also introduce connected components analysis on predicted segmentation $hat(Y)$, providing instance-level information for the learning signal such as the number of predicted instances vs. the number of label instances. This discrepancy between predicted and labeled instances is used for example in Rachmadi et al. @rachmadi2024family. However, the introduction of instance analysis on prediction masks incurs a significant computational overhead since the connected components must be calculated on-the-fly as opposed to the precomputation on label masks only @rachmadi2024family.
 
@@ -51,7 +51,7 @@ This results in an increased weight in smaller lesions compared to larger ones, 
 Inverse weighting maps $W_"iw"$ were introduced by Shirokikh et al. @shirokikh2020universal and are designed to address the instance-imbalance problem by assigning a significantly higher weight to pixels belonging to a foreground instance. The background is treated as an additional instance $I_0$. Each pixel $w_n in W_"iw"$ is assigned a weight depending on the instance it is part of:
 
 $
-w_n = frac(N,(K + 1) abs(I_k)) quad quad  "if" y_n in {I_0, I_1, dots, I_K}
+w_n = frac(N,(K + 1) abs(I_k)) quad quad  "if" n in I_k "for" k in [K]
 $<eqiw>
 
 This has the effect that the background as well as foreground instances, which typically occupy a substantially smaller fraction of the label compared to the background, all receive the same "budget" that is distributed among all the pixels within the instances.

@@ -1,5 +1,4 @@
 #import "../utils.typ": *
-#import "@preview/glossarium:0.5.9": gls
 
 = Methodology <chapter_methodology>
 This section gives a description outlining the concrete implementation of the thesis. It contains a comprehensive review of the datasets in @sec_datasets as well as some notions on their fidelity and its consequences. @sec_metrics describes and formalizes the metrics used to evaluate the performance of the experiments and the reasoning behind them. In @sec_loss_functions_method, all used loss functions and their combination into global and local components are described. Additionally, different instance-aware weight maps and their incorporation into these losses are proposed. @sec_modelarchitecture describes the adaptive model architecture used for both 2D and 3D data. Finally, @sec_experimentalsetup describes which experiments have been conducted and why they were chosen.
@@ -109,7 +108,7 @@ The @wmh dataset also provides a clinically highly relevant segmentation dataset
 === Platelet Organelles
 In the platelet organelles dataset, @em was used to image multiple human blood platelet cells and expert labels were created indicating multiple types of organelles @plateletdataset. This thesis focuses on the segmentation targets @cv and @ag as they are present in high numbers and varied shapes and sizes in each platelet cell.
 
-The 72 individual 2D slices of shape (800*800) were extracted from the original .tiff files and split into (train, val, test) with proportions $(0.6, 0.2, 0.2)$ from each file. This served as a means to gather more generalized data since intensities between scans can vary greatly. All slices were treated as separate 2D images for the calculation of connected components, metrics, and input to the segmentation network.
+The 74 individual 2D slices of shape (800*800) were extracted from the original .tiff files and split into (train, val, test) with proportions $(0.6, 0.2, 0.2)$ from each file. This served as a means to gather more generalized data since intensities between scans can vary greatly. All slices were treated as separate 2D images for the calculation of connected components, metrics, and input to the segmentation network.
 
 Both @cv and @ag provide a diverse landscape of connected components. @figplateletcvmetrics and @figplateletagmetrics show dataset samples and statistics of these organelles respectively. Comparatively, alpha granule instances are much larger than canalicular vessels, though there are a fewer of them in each image. As a fraction of the containing Voronoi fraction, they share a similar distribution, since on average both @cv and @ag instances make up $3-5%$ of the region they seeded.
 #figure(
@@ -307,7 +306,7 @@ Neuronal mitochondria are some of the most energy-demanding organelles of the bo
 == Segmentation Evaluation Metrics <sec_metrics>
 Many works have previously discussed the importance of the choice of metrics and the need to adapt to the specific task at hand, Maier-Hein et al. @maier2022metrics have provided concrete guidance in the choice of global as well as instance-wise metrics in segmentation problems and Kofler et al. @kofler2023panoptica provide a tool to calculate many of these instance-wise metrics.
 
-Additionally, Jaus et al. @jaus2025every proposed a family of metrics that are of particularly valuable to us since they use Voronoi tesselation to aggregate metrics on each region separately and average them to identify learned instance imbalance during evaluation.
+Additionally, Jaus et al. @jaus2025every proposed a family of metrics that are of particularly valuable to us since they use Voronoi tessellation to aggregate metrics on each region separately and average them to identify learned instance imbalance during evaluation.
 
 This section will provide a comprehensive overview of the metrics of interest, the rationales behind their choice and supplementary information on how predicted segmentations were evaluated. We further divide metrics into three categories: global, instance-wise, and region-wise indicating the information used in the computation.
 
@@ -348,7 +347,7 @@ Instance-wise metrics are of particular interest to us since they give us a meas
   ],
 ) <figinstancematching>
 
-Calculation of these measures is done by extending the notion of segmentation error classification from pixels (as visualized in @figinstanceimbalance) to instances. A simplified overview of instance matching can be seen in @figinstancematching. Using this as a basis, @rq can be calculated analogously to @eqDSC, but considering only the instance error classifications:
+Calculation of these measures is done by extending the notion of segmentation error classification from pixels (as visualized in @figinstanceimbalance) to instances. A simplified overview of instance matching can be seen in @figinstancematching. Using this as a basis, @rq can be calculated analagously to @eqDSC, but considering only the instance error classifications:
 
 $
   "RQ" = frac(2*"TP"_"inst", 2*"TP"_"inst" + "FP"_"inst" + "FN"_"inst")
@@ -360,10 +359,10 @@ This can be extended by calculating instance recall by volume. Due to the instan
 
 @sqassd is a boundary based metric that calculates the average deviation of a prediction instance surface to its matched label surface in pixels or voxels. This means that the lower this metric is, the closer the prediction adheres to the label. Perfect predictions would therefore have an @sqassd of 0.
 
-@sqdsc is the last of the truly instance-wise metrics we considered and measures the @dsc averaged over all $"TP"_"inst"$ instances. In the set of all matched instances $cal(I) = {(I_p, I_g) | I_p in hat(I), I_g in I}$ identified by the matching algorithm, @sqdsc can be calculated as:
+@sqdsc is the last of the truly instance-wise metrics we considered and measures the @dsc averaged over all $"TP"_"inst"$ instances. In the set of all matched instances $cal(I) = {(hat(I)_hat(k), I_k) | hat(I)_hat(k) in hat(I), I_k in I}$ identified by the matching algorithm, @sqdsc can be calculated as:
 
 $
-  "SQDSC"(cal(I)) = frac(1, |"TP"_"inst"|)sum_((I_p, I_g) in cal(I))"DSC"(I_p, I_g)
+  "SQDSC"(cal(I)) = frac(1, |"TP"_"inst"|)sum_((I_hat(k), I_k) in cal(I))"DSC"(I_hat(k), I_k)
 $
 
 Since this metric is calculated only on matched instances, we can again separate the label based on instance volume for the calculation of $("SQDSC"_"Q1", "SQDSC"_"Q2", "SQDSC"_"Q3", "SQDSC"_"Q4")$, to analyze segmentation performance across instance volume quartiles particularly in smaller components to validate our hypotheses of addressing the instance imbalance problem.
@@ -392,7 +391,7 @@ This section provides concrete formulations of the loss functions that were used
 We define a Voronoi-based loss similarly to CC-Loss introduced by Bouteille et al. @bouteille2026learning as the average region-wise loss across all Voronoi regions $R$ using an arbitrary loss function $cal(L)$:
 
 $
-  cal(L)_"Voronoi" (Y,tilde(Y)) = frac(1, K) sum_(k=1)^K cal(L)(Y_R_k, tilde(Y)_R_k)
+  cal(L)_"Voronoi" (Y,tilde(Y), R) = frac(1, K) sum_(k=1)^K cal(L)(Y_R_k, tilde(Y)_R_k)
 $<eqvoronoiloss>
 
 @figvoronoiloss shows the process on a label with $K=3$ regions. The labels and predictions from each region are passed to the loss function and their signals are averaged.
@@ -470,7 +469,7 @@ $<eqvregion>
 ) <figvregionmap>
 
 ==== Voronoi Inverse Weighting<secviw>
-Voronoi inverse weighting maps $W_"v_iw"$ aim to combine the concept of inverse weighting introduced by Shirokikh et al. @shirokikh2020universal with Voronoi regions, assigning all regions equal budget and dividing that budget equally between the background and foreground pixels within them:
+Voronoi inverse weighting maps $W_"v_iw"$ aim to combine the concept of inverse weighting introduced by Shirokikh et al. @shirokikh2020universal with Voronoi regions, assigning all regions equal budget and dividing that budget evenly between the two groups, with each group's share distributed uniformly among its pixels:
 
 $
   w_n = cases(
@@ -540,12 +539,12 @@ $W_"v_islands"$ prioritizes instance discovery, if $hat(Y)$ contains foreground 
 ) <figvislandsmap>
 
 ==== Adaptive Voronoi Weighting<secvadaptive>
-Adaptive weighting is a novel Voronoi-based weight concept that can not be precomputed, but is computed on-the-fly based on model behaviour and predictions. Before loss values are calculated, if a region with a visible instance contains at least 1 @tp, it is deemed recognized, with each pixel receiving a weight of 1. If foreground pixels are visible, but no @tp was predicted, the region's pixels receive a weight of $beta = 4$. This makes regions where the model failed to find the foreground $beta$-times more important.
+Adaptive weighting is a novel Voronoi-based weight concept that can not be precomputed, but is computed on-the-fly based on model behaviour and predictions. Before loss values are calculated, the segmentation probabilities $tilde(Y)$ are thresholded into the binary map $hat(Y)$. If a region with a visible instance contains at least 1 @tp, it is deemed recognized, with each pixel receiving a weight of 1. If foreground pixels are visible, but no @tp was predicted, the region's pixels receive a weight of $lambda = 4$. This makes regions where the model failed to find the foreground $lambda$-times more important.
 
-Let $R_k$ be the Voronoi region that contains the instance $I_k$, if the prediction $hat(Y)$ contains no foreground pixels/voxels, the pixels of the region are assigned the weight of $beta$:
+Let $R_k$ be the Voronoi region that contains the instance $I_k$, if the prediction $hat(Y)$ contains no foreground pixels/voxels, the pixels of the region are assigned the weight of $lambda$:
 $
   v_n = cases(
-    beta quad quad "if" n in R_k "," |I_k| > 0", and" sum_(j in I_k) hat(y)_j = 0,
+    lambda quad quad "if" n in R_k "," |I_k| > 0", and" sum_(j in I_k) hat(y)_j = 0,
     1 quad quad "otherwise"
   )
 $<eqvadaptive_unscaled>
@@ -560,15 +559,15 @@ $
 
 #figure(
   image("../figures/weight_maps/v_adaptive.png", width: 45%),
-  caption: [An overlay of the $"W"_"v_adaptive"$ map over a prediction map of canalicular vessels. If a Voronoi region contains a single #box(inset: 0pt, rect(width: 0.8em, height: 0.8em, fill: class_colors.at(0), stroke: 0.1pt)) TP, the weights are set to 1. If all pixels in a regions instance are #box(inset: 0pt, rect(width: 0.8em, height: 0.8em, fill: class_colors.at(1), stroke: 0.1pt)) FN, the weights of the region are set to $beta=4$. After all regions receive their relative weight, the entire map is normalized to make sure its sum is equal to the number of pixels. #box(inset: 0pt, rect(width: 0.8em, height: 0.8em, fill: class_colors.at(2), stroke: 0.1pt)) FP pixels have no impact on the weight map.
+  caption: [An overlay of the $"W"_"v_adaptive"$ map over a prediction map of canalicular vessels. If a Voronoi region contains a single #box(inset: 0pt, rect(width: 0.8em, height: 0.8em, fill: class_colors.at(0), stroke: 0.1pt)) TP, the weights are set to 1. If all pixels in a regions instance are #box(inset: 0pt, rect(width: 0.8em, height: 0.8em, fill: class_colors.at(1), stroke: 0.1pt)) FN, the weights of the region are set to $lambda=4$. After all regions receive their relative weight, the entire map is normalized to make sure its sum is equal to the number of pixels. #box(inset: 0pt, rect(width: 0.8em, height: 0.8em, fill: class_colors.at(2), stroke: 0.1pt)) FP pixels have no impact on the weight map.
   ],
 ) <figvadaptive>
 
 == Model Architecture<sec_modelarchitecture>
-This section describes the technical setup used in the construction of the training pipeline and the architecture of the adaptive neural network used in experiments #footnote([The network implementation and additional resources are freely available at #link("https://github.com/ossner/VoronoiLoss", "github.com/ossner/VoronoiLoss")]).
+This section describes the technical setup used in the construction of the training pipeline and the architecture of the adaptive neural network used in experiments #footnote([The network implementation and additional resources are available at #link("https://github.com/ossner/VoronoiLoss", "github.com/ossner/VoronoiLoss")]).
 
 === Adaptive U-Net
-The model architecture used in all experiments is based on the U-Net architecture introduced by Ronneberger et al. @ronneberger2015u specifically for the use in biomedical image segmentation. The implementation from MONAI @cardoso2022monai was parametrized based on the dataset to change the spatial dimenstion (2D vs. 3D) and the number of input channels available.
+The model architecture used in all experiments is based on the U-Net architecture introduced by Ronneberger et al. @ronneberger2015u specifically for the use in biomedical image segmentation. The implementation from MONAI @cardoso2022monai was parametrized based on the dataset to change the spatial dimension (2D vs. 3D) and the number of input channels available.
 
 Since the 3D datasets provide additional co-registered MRI imaging procedures of the same sample, both T1-weighted images as well as @flair images were used as inputs for the 3D network, with the 2D network receiving only the single-channel intensity image provided by @em.
 
@@ -648,7 +647,7 @@ The introduction of image patching, a common method in segmentation to divide in
 )<tabpatching>
 
 == Experimental Setup<sec_experimentalsetup>
-In addition to the patching parameters in @tabpatching, this section gives a description of the hyperparaters used during experimentation, the generation of their results and further important points that aid in reproducibility.
+In addition to the patching parameters in @tabpatching, this section gives a description of the hyperparameters used during experimentation, the generation of their results and further important points that aid in reproducibility.
 
 @tabhparams shows the common hyperparameters like learning rate, batch size and number of training epochs. We use a learning rate scheduler based on cosine decay with a warmup period as implemented in MONAI @cardoso2022monai. For each dataset, the warmup period was set to 5% of the total number of training epochs.
 
@@ -761,4 +760,4 @@ With this technical setup, we evaluated several modifications of the formula pre
 
 We consider standard $cal(L)_"DiceCE"$ operating globally on the image as a baseline. We further analyze the effect of all presented weight maps on this baseline loss.
 
-To improve readability, the formula $cal(L)_"total" = hat(alpha) * cal(L)_"global" + hat(beta) * cal(L)_"Voronoi"$ is simplified to a tuple with the baseline being represented as (DiceCE, none).
+To improve readability, the formula $cal(L)_"total" = hat(alpha) * cal(L)_"global" + hat(beta) * cal(L)_"Voronoi"$ is simplified to a tuple with the baseline being represented as $("DiceCE", "none")$. A loss combination that uses DiceCE both globally and region-wise with $hat(alpha)=2, hat(beta)=1$ is written as $(2*"DiceCE", "DiceCE")$.
