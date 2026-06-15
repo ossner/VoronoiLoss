@@ -559,7 +559,7 @@ $
 
 #figure(
   image("../figures/weight_maps/v_adaptive.png", width: 45%),
-  caption: [An overlay of the $"W"_"v_adaptive"$ map over a prediction map of canalicular vessels. If a Voronoi region contains a single #box(inset: 0pt, rect(width: 0.8em, height: 0.8em, fill: class_colors.at(0), stroke: 0.1pt)) TP, the weights are set to 1. If all pixels in a regions instance are #box(inset: 0pt, rect(width: 0.8em, height: 0.8em, fill: class_colors.at(1), stroke: 0.1pt)) FN, the weights of the region are set to $lambda=4$. After all regions receive their relative weight, the entire map is normalized to make sure its sum is equal to the number of pixels. #box(inset: 0pt, rect(width: 0.8em, height: 0.8em, fill: class_colors.at(2), stroke: 0.1pt)) FP pixels have no impact on the weight map.
+  caption: [An overlay of the $W_"v_adaptive"$ map over a prediction map of canalicular vessels. If a Voronoi region contains a single #box(inset: 0pt, rect(width: 0.8em, height: 0.8em, fill: class_colors.at(0), stroke: 0.1pt)) TP, the weights are set to 1. If all pixels in a regions instance are #box(inset: 0pt, rect(width: 0.8em, height: 0.8em, fill: class_colors.at(1), stroke: 0.1pt)) FN, the weights of the region are set to $lambda=4$. After all regions receive their relative weight, the entire map is normalized to make sure its sum is equal to the number of pixels. #box(inset: 0pt, rect(width: 0.8em, height: 0.8em, fill: class_colors.at(2), stroke: 0.1pt)) FP pixels have no impact on the weight map.
   ],
 ) <figvadaptive>
 
