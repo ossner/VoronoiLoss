@@ -49,7 +49,7 @@ DATASET_CONFIGS = {
         'epochs': 300,
         'roi': (512, 512),
         'patches': 16,
-        'cache': 0.25,
+        'cache': 1,
         'label': 255,
         'quartiles': [1412, 2274, 3758],
     },
@@ -82,6 +82,10 @@ DATASET_CONFIGS = {
 }
 
 def save_as_nifti(tensor, filename, is_multichannel=False):
+    """
+    Takes a tensor that can be squeezed into 3D and saves it as a nifti file
+    """
+    
     data = tensor.detach().cpu().numpy()
     data = np.squeeze(data, axis=0)
     
@@ -96,6 +100,9 @@ def save_as_nifti(tensor, filename, is_multichannel=False):
 
 
 def save_2d_as_png(tensor, base_name):
+    """
+    Takes a tensor that can be squeezed into 2D and saves it as a png
+    """
     data = tensor.detach().cpu().numpy().squeeze(0)
     def to_8bit(arr):
         arr_min, arr_max = arr.min(), arr.max()
